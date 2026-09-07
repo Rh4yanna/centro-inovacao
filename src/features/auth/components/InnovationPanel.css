@@ -1,0 +1,200 @@
+﻿.auth-placeholder.innovation-panel {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 100%;
+  background: radial-gradient(
+    ellipse at 40% 42%,
+    #7134a4 0%,
+    #38125f 45%,
+    #170b2e 100%
+  );
+  color: white;
+}
+.innovation-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.65;
+  background-image:
+    radial-gradient(circle at 18% 22%, #fff 1px, transparent 2px),
+    radial-gradient(circle at 76% 18%, #dfc3ff 2px, transparent 3px),
+    radial-gradient(circle at 83% 68%, #fff 1px, transparent 2px),
+    radial-gradient(circle at 23% 78%, #fff 1px, transparent 2px),
+    radial-gradient(circle at 64% 86%, #c9acff 1px, transparent 2px),
+    radial-gradient(circle at 9% 52%, #fff 1px, transparent 2px),
+    radial-gradient(circle at 65% 36%, #fff 1px, transparent 2px);
+}
+.innovation-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70%;
+  max-width: 390px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+.innovation-orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px solid #d6b4ff30;
+  border-radius: 50%;
+}
+.orbit-outer {
+  transform: scale(1.18) rotate(-25deg);
+  border-style: dashed;
+}
+.orbit-inner {
+  transform: scale(0.75);
+}
+.innovation-core {
+  position: absolute;
+  inset: 27%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 25%,
+    #d8b2ff,
+    #8550b9 45%,
+    #3d1661 80%
+  );
+  box-shadow:
+    0 0 70px #c49aff40,
+    inset -15px -10px 30px #170b2e70;
+  animation: innovation-core-fade 1s 4.7s both;
+}
+.rocket-departure {
+  position: absolute;
+  inset: 0;
+  animation: rocket-exit 1s 4.6s both;
+}
+.rocket-orbit {
+  position: absolute;
+  inset: 0;
+  animation: rocket-laps 4.6s cubic-bezier(0.35, 0, 0.45, 1) both;
+}
+.rocket-ship {
+  position: absolute;
+  left: 50%;
+  top: -32px;
+  width: 64px;
+  height: 64px;
+  transform: translateX(-50%) rotate(45deg);
+  filter: drop-shadow(0 0 16px #ceacff80);
+}
+.rocket-ship > svg {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  stroke: #fff;
+  fill: #b18cdb;
+  stroke-width: 1.4;
+}
+.rocket-flame {
+  position: absolute;
+  width: 17px;
+  height: 43px;
+  left: 4px;
+  bottom: -24px;
+  transform: rotate(45deg);
+  border-radius: 50% 50% 70% 70%;
+  background: linear-gradient(#fff7cb, #f7ac69 45%, transparent);
+  box-shadow: 0 0 15px #ffa85c60;
+}
+.innovation-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  animation: innovation-reveal 1.2s 5.5s both;
+}
+.innovation-message > svg {
+  width: 30px;
+  height: 30px;
+  color: #e0bdff;
+  margin-bottom: 25px;
+}
+.innovation-message > span {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #ddcbea;
+}
+.innovation-message h2 {
+  font-size: clamp(34px, 4.4vw, 74px);
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: -2px;
+  margin: 22px 0;
+}
+.innovation-message h2 strong {
+  font-weight: 700;
+  color: #e0bbff;
+}
+.innovation-message p {
+  color: #ddcbea;
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 240px;
+}
+.innovation-signature {
+  position: absolute;
+  bottom: 35px;
+  left: 15px;
+  right: 15px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #d3badc;
+}
+@keyframes rocket-laps {
+  from {
+    transform: rotate(-45deg);
+  }
+  to {
+    transform: rotate(675deg);
+  }
+}
+@keyframes rocket-exit {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(160%, -160%);
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes innovation-core-fade {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes innovation-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rocket-departure,
+  .innovation-core {
+    display: none;
+  }
+  .rocket-departure,
+  .rocket-orbit,
+  .innovation-core,
+  .innovation-message {
+    animation: none;
+  }
+}

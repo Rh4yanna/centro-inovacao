@@ -6,6 +6,7 @@ import {
   Navigate,
   NavLink,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import {
   House,
@@ -341,9 +342,9 @@ function Workspace({ user, onLogout }) {
   );
 }
 
-export default function App() {
+function AppRoutes() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [forgot, setForgot] = useState(false);
   const [verificando, setVerificando] = useState(true);
 
   // O cookie sobrevive ao F5, então a sessão é recuperada do servidor.
@@ -363,25 +364,34 @@ export default function App() {
       // Sair não pode falhar para o usuário: o cookie expira sozinho.
     }
     setUser(null);
-    setForgot(false);
+    navigate("/login", { replace: true });
   }
 
   if (verificando) return <p className="empty">Carregando...</p>;
 
   return (
-    <BrowserRouter>
-      {user ? (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : (
+        <LoginPage
+          onNavigateToForgot={() => navigate("/esqueci-senha")}
+          onLoginSuccess={(loggedUser) => {
+            setUser(loggedUser);
+            navigate("/dashboard", { replace: true });
+          }}
+        />
+      )} />
+      <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" replace /> : (
+        <EsqueciSenhaPage onBackToLogin={() => navigate("/login")} />
+      )} />
+      <Route path="/*" element={user ? (
         <DominiosProvider>
           <Workspace user={user} onLogout={sair} />
         </DominiosProvider>
-      ) : forgot ? (
-        <EsqueciSenhaPage onBackToLogin={() => setForgot(false)} />
-      ) : (
-        <LoginPage
-          onNavigateToForgot={() => setForgot(true)}
-          onLoginSuccess={setUser}
-        />
-      )}
-    </BrowserRouter>
+      ) : <Navigate to="/login" replace />} />
+    </Routes>
   );
+}
+
+export default function App() {
+  return <BrowserRouter><AppRoutes /></BrowserRouter>;
 }

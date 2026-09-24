@@ -4,6 +4,28 @@ Plataforma web moderna e de alto desempenho desenvolvida para gestão do ecossis
 
 ---
 
+## Como rodar
+
+```bash
+npm install
+npm run dev
+```
+
+O front conversa com a API do back-end. Por padrão procura em
+`http://localhost:3000`; para apontar pra API que já está no ar, crie um
+`.env.local` com:
+
+```
+VITE_API_URL=https://backendci-production.up.railway.app
+```
+
+Contas de teste (senha `senha123456`): `ana@centroinovacao.br` (admin),
+`carla@centroinovacao.br` (gestor), `bruno@centroinovacao.br` (só leitura).
+
+Detalhes da integração em [`docs/integracao-api.md`](docs/integracao-api.md).
+
+---
+
 ## Tecnologias Utilizadas
 
 Este projeto foi construído utilizando as melhores práticas do desenvolvimento front-end moderno:

@@ -23,7 +23,7 @@ def table(rows):
         xml += '</w:tr>'
     parts.append(xml + '</w:tbl>')
 
-p('Ecossistema de Inovação', 'Title')
+p('Inovacaoguarapuava', 'Title')
 p('Proposta inicial de tabelas para o backend', 'Subtitle')
 p('Documento para alinhamento com a equipe responsável • Versão 1.0 • 06/09/2026')
 p('1. Objetivo e escopo', 'Heading1')
@@ -38,7 +38,7 @@ p('3. Tabelas propostas', 'Heading1')
 
 items = [
 ('usuarios', 'Acesso ao sistema e identificação dos responsáveis por alterações.', [('id','Chave primária'),('nome, email','Identificação; e-mail único'),('senha_hash','Hash da senha; nunca armazenar a senha em texto puro'),('perfil, ativo','Perfil de acesso e habilitação do usuário'),('criado_em, atualizado_em','Datas de controle')]),
-('instituicoes', 'Cadastro central das instituições do ecossistema.', [('id','Chave primária'),('nome, cnpj','Identificação; CNPJ único'),('data_fundacao, status','Fundação e situação: ativa ou inativa'),('email, telefone, site','Contatos institucionais'),('tipo_instituicao_id','FK para tipos_instituicao'),('area_atuacao_id','FK para areas_atuacao; área principal'),('descricao','Descrição com limite de 500 caracteres, conforme o protótipo'),('criado_em, atualizado_em','Datas de controle'),('criado_por, atualizado_por','FKs para usuarios')]),
+('instituicoes', 'Cadastro central das instituições do Inovacaoguarapuava.', [('id','Chave primária'),('nome, cnpj','Identificação; CNPJ único'),('data_fundacao, status','Fundação e situação: ativa ou inativa'),('email, telefone, site','Contatos institucionais'),('tipo_instituicao_id','FK para tipos_instituicao'),('area_atuacao_id','FK para areas_atuacao; área principal'),('descricao','Descrição com limite de 500 caracteres, conforme o protótipo'),('criado_em, atualizado_em','Datas de controle'),('criado_por, atualizado_por','FKs para usuarios')]),
 ('enderecos_instituicoes', 'Endereço cadastral de cada instituição.', [('id','Chave primária'),('instituicao_id','FK para instituicoes; único se houver apenas um endereço por instituição'),('logradouro, numero, bairro','Localização; número como texto para permitir “s/n”'),('cidade, estado, cep, complemento','Demais dados do endereço')]),
 ('tipos_instituicao', 'Catálogo de tipos para classificação e filtros.', [('id','Chave primária'),('nome, ativo','Nome único e disponibilidade no cadastro')]),
 ('areas_atuacao', 'Catálogo de áreas como Educação, Tecnologia e Saúde.', [('id','Chave primária'),('nome, ativo','Nome único e disponibilidade no cadastro')]),

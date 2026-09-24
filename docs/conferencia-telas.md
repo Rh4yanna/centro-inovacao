@@ -1,30 +1,41 @@
-﻿# Conferência das telas enviadas
+﻿# Conferência das telas e do quadro
 
-## Já existiam
-- Dashboard com indicadores, gráficos e próximas reuniões.
-- Lista de instituições, filtros e paginação.
-- Nova instituição e edição.
-- Visão geral de instituições ativas e inativas.
-- Ativação/desativação, menu de ações, modal de relatório e confirmação de exclusão.
+## Implementado e conectado à API
 
-## Complementado nesta revisão
-- Representantes: lista, busca por nome/e-mail, filtros por cargo/status, paginação e cadastro com dados pessoais, instituição, função e endereço.
-- Representantes: detalhes e edição para dar continuidade às ações da lista.
-- Reuniões: lista, busca, filtros por status/período, paginação e cadastro com data, horário, local, descrição, link e senha.
-- Reuniões: detalhes e edição, acessíveis pela lista e pelo Dashboard.
-- Dashboard usa a mesma coleção de reuniões da listagem; criação abre o formulário completo.
-- Instituições: cinco abas disponíveis nos dois estados; representantes vinculados exibidos com contagem real.
-- Representantes e reuniões são persistidos no navegador; erros de armazenamento são informados sem sair do formulário.
+- Login, recuperação da sessão e logout; rotas próprias `/login` e `/esqueci-senha`.
+- Solicitação de recuperação de senha.
+- Instituições: lista, filtros, cadastro, edição, consulta, mudança de status e exclusão.
+- Representantes: lista, filtros, cadastro, edição, detalhes e vínculo informado no cadastro.
+- Reuniões: lista, filtros, cadastro, edição e detalhes.
+- Dashboard: indicadores, evolução e participação por instituição a partir da API.
+- Deploy de produção na Vercel.
 
-## Limites e diferenças em relação às imagens
-- Dados iniciais são demonstrativos. Não existe integração com backend.
-- Participações, reuniões vinculadas à instituição e documentos exibem estados vazios porque não há registros associados nem serviço de documentos.
-- Indicadores históricos dos gráficos do Dashboard permanecem ilustrativos e estão identificados na página.
-- O modal de relatório já existente oferece impressão para PDF e CSV compatível com Excel; não produz XLSX. Os relatórios especializados ainda dependem dos históricos.
-- A tela de Presenças não foi detalhada nas referências enviadas; exibe estado vazio.
-- Notificações e autenticação continuam dependendo da integração futura.
+## Complementado na revisão das pendências
 
-## Validação
-- Build de produção e ESLint concluídos.
-- Não houve validação visual automatizada em navegador nesta revisão.
-- O Vite emitiu aviso sobre Node 20.16: exige 20.19+ ou 22.12+, embora o build tenha concluído.
+- Proteção de acesso por recurso do menu e de formulários por papel.
+- Botões de criação/edição ocultos para consulta; exclusão restrita a administrador na interface.
+- Lista de presenças com filtros por participante/reunião, status, convidado, instituição e período.
+- Histórico por representante e instituição, derivado das listas de participantes das reuniões.
+- Gestão de vínculos: consulta, criação e encerramento com confirmação.
+- Testes automatizados de permissões, incluindo URLs diretas.
+- Correção da atualização de status da instituição: só recarrega após sucesso explícito.
+- README alinhado ao código, tecnologias, Node 22, rotas e configuração de produção.
+
+## Ainda em implementação / aguardando contrato
+
+- QR Code e check-in público.
+- Upload, listagem e download de documentos.
+- Redefinição da senha pelo token recebido.
+- Exclusão ou cancelamento de reuniões conforme regras do backend.
+- Relatórios completos por tipo e período; atualmente a exportação é local, PDF pela impressão e CSV.
+- Testes completos com o backend real, incluindo gravações e os módulos ainda pendentes.
+
+A documentação da integração informa recursos de check-in e documentos no backend, mas não fornece todos os contratos. A ausência de uma tela não confirma ausência do recurso no backend.
+
+## Diferenças do planejamento
+
+O quadro menciona Next.js/App Router, shadcn/ui e Atomic Design. A implementação usa Vite/React Router, componentes próprios e organização por funcionalidades. Essas diferenças devem ser alinhadas com os critérios da entrega; não foram feitas migrações de framework.
+
+## Verificação desta revisão
+
+Três testes unitários de permissão passaram. Oito cenários de navegador (quatro em desktop e quatro em celular) passaram com API simulada: redirecionamento/recuperação, bloqueio de consulta, acesso de gestor e filtros de presença/largura da página. As consultas reais confirmaram o formato de participantes e vínculos, mas não foram feitas mutações em produção.

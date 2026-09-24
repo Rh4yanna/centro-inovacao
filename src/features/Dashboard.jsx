@@ -1,3 +1,4 @@
+import { Permissao } from "../auth/Permissao";
 import { useEffect, useState } from "react";
 import { Building2, Users, TrendingUp, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -103,7 +104,7 @@ export default function Dashboard({ user, meetings }) {
             <p>
               Instituições ativas cadastradas
               <br />
-              no ecossistema.
+              no Inovacaoguarapuava.
             </p>
             <strong>{c ? c.instituicoes.ativas : "—"}</strong>
             <small> instituições</small>
@@ -171,9 +172,9 @@ export default function Dashboard({ user, meetings }) {
       <Card>
         <div className="section-heading">
           <h2>Próximas reuniões</h2>
-          <Link className="button primary" to="/reunioes/nova">
+          <Permissao><Link className="button primary" to="/reunioes/nova">
             + Nova reunião
-          </Link>
+          </Link></Permissao>
         </div>
         <MeetingTable
           meetings={meetings

@@ -1,3 +1,5 @@
+import { Attendance } from "../Attendance";
+import { Permissao } from "../../auth/Permissao";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
@@ -40,7 +42,7 @@ export function InstitutionList({ institutions }) {
     <>
       <header className="page-heading">
         <h1>Instituições</h1>
-        <p>Gerencie as instituições que fazem parte do ecossistema.</p>
+        <p>Gerencie as instituições que fazem parte do Inovacaoguarapuava.</p>
       </header>
       <Card title="Busca e filtros">
         <div className="filters">
@@ -104,9 +106,9 @@ export function InstitutionList({ institutions }) {
       <Card>
         <div className="section-heading">
           <h2>Instituições cadastradas</h2>
-          <Link className="button primary" to="/instituicoes/nova">
+          <Permissao><Link className="button primary" to="/instituicoes/nova">
             + Nova instituição
-          </Link>
+          </Link></Permissao>
         </div>
         <div className="table-scroll">
           <table>
@@ -161,9 +163,9 @@ export function InstitutionList({ institutions }) {
                         </button>
                         {menu === i.id && (
                           <div className="dropdown">
-                            <Link to={`/instituicoes/${i.id}/editar`}>
+                            <Permissao><Link to={`/instituicoes/${i.id}/editar`}>
                               Editar instituição
-                            </Link>
+                            </Link></Permissao>
                             <Link to={`/instituicoes/${i.id}`}>
                               Ver detalhes
                             </Link>
@@ -282,7 +284,7 @@ export function InstitutionForm({ onSave }) {
         <p>
           {id
             ? "Edite as informações da instituição cadastrada."
-            : "Preencha as informações para cadastrar uma nova instituição no ecossistema."}
+            : "Preencha as informações para cadastrar uma nova instituição no Inovacaoguarapuava."}
         </p>
       </header>
       <form onSubmit={submit}>
@@ -497,20 +499,20 @@ export function InstitutionDetail({ onTrocarStatus, onDelete }) {
           <p className="muted">{i.type}</p>
         </div>
         <div className="row-actions">
-          <Link className="button" to={`/instituicoes/${id}/editar`}>
+          <Permissao><Link className="button" to={`/instituicoes/${id}/editar`}>
             Editar instituição
-          </Link>
-          <button
+          </Link></Permissao>
+<Permissao>          <button
             className={
               i.status === "Ativa" ? "danger-outline" : "success-outline"
             }
             onClick={async () => {
               const alvo = i.status === "Ativa" ? "Inativa" : "Ativa";
-              if (await onTrocarStatus(id, alvo)) buscar();
+              if (await onTrocarStatus(id, alvo) === true) buscar();
             }}
           >
             {i.status === "Ativa" ? "Desativar" : "Ativar"} instituição
-          </button>
+          </button></Permissao>
           <div className="menu-wrap">
             <button
               className="icon-button bordered"
@@ -530,7 +532,7 @@ export function InstitutionDetail({ onTrocarStatus, onDelete }) {
                 >
                   Gerar relatório
                 </button>
-                <button
+<Permissao excluir>                <button
                   className="danger-text"
                   onClick={() => {
                     setModal("delete");
@@ -538,7 +540,7 @@ export function InstitutionDetail({ onTrocarStatus, onDelete }) {
                   }}
                 >
                   Excluir instituição
-                </button>
+                </button></Permissao>
               </div>
             )}
           </div>
@@ -630,10 +632,10 @@ export function InstitutionDetail({ onTrocarStatus, onDelete }) {
       ) : (
         <Card title={{representatives:'Representantes',participations:'Participações',meetings:'Reuniões',documents:'Documentos'}[tab]}>
           {tab === 'representatives' ? <>
-            <Link className="button primary" to="/representantes/novo">+ Adicionar representante</Link>
+            <Permissao><Link className="button primary" to="/representantes/novo">+ Adicionar representante</Link></Permissao>
             <div className="table-scroll"><table><thead><tr><th>Nome</th><th>Cargo / Função</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead><tbody>{linked.map(r => <tr key={r.id}><td>{r.name}</td><td>{r.role}</td><td>{r.email}</td><td><Badge status={r.status}/></td><td><Link className="button" to={`/representantes/${r.id}`}>Ver representante</Link></td></tr>)}</tbody></table></div>
             {!linked.length && <p className="empty">Nenhum representante vinculado.</p>}
-          </> : <p className="empty">{{participations:'Nenhuma participação registrada para esta instituição.',meetings:'Nenhuma reunião vinculada a esta instituição.',documents:'Nenhum documento cadastrado para esta instituição.'}[tab]}</p>}
+          </> : ['participations', 'meetings'].includes(tab) ? <Attendance institutionId={id}/> : <p className="empty">{{participations:'Nenhuma participação registrada para esta instituição.',meetings:'Nenhuma reunião vinculada a esta instituição.',documents:'Nenhum documento cadastrado para esta instituição.'}[tab]}</p>}
         </Card>
       )}
       <Link className="button" to="/instituicoes">

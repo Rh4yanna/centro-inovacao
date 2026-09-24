@@ -1,6 +1,6 @@
 # Integração com o back-end
 
-O front não guarda mais nada no navegador. Todo dado vem da API e volta pra ela.
+Os cadastros e indicadores vêm da API. Apenas a preferência de lembrar o e-mail usa armazenamento local.
 
 ## Como rodar
 
@@ -112,11 +112,20 @@ prontas pra mostrar.
 
 Atenção: trocar status é **POST**, não PATCH.
 
-## O que ainda não está ligado
+## Presencas, historicos e vinculos
 
-- **Presenças**: a tela existe, mas ainda mostra um aviso. A API já tem
-  `GET /api/reunioes/:id/presencas` e o check-in por QR Code.
-- **Documentos**: a aba no detalhe da instituição está vazia. A API tem
-  `GET/POST /api/documentos`.
-- **Relatório PDF/CSV**: continua sendo gerado no navegador, a partir do dado
-  real que veio da API. Não existe endpoint de relatório no back.
+A consulta de presencas usa `GET /api/reunioes/:id/participantes`, com resposta `{ dados, totais }`. Cada linha informa `pessoaId`, `instituicaoId`, `nome`, `instituicao`, `tipo`, `statusPresenca` e `horarioCheckin`. Os historicos percorrem as reunioes em lotes de ate quatro consultas simultaneas e filtram a pessoa/instituicao. Uma falha e apresentada como erro; nao e convertida em historico vazio.
+
+A consulta real a `GET /api/reunioes/:id/presencas` respondeu 405; a documentacao anterior estava incorreta para esse metodo. Nao foi inferido o contrato de gravacao a partir dessa resposta.
+
+Vinculos: `GET /api/representantes/:id` retorna `vinculos`; criacao usa `POST /api/vinculos` e encerramento usa `POST /api/vinculos/:id/encerrar`. A interface pede confirmacao antes de encerrar.
+
+## Contratos ainda necessarios
+
+- QR Code: geracao, validade, resposta e URL publica de check-in.
+- Check-in: consulta publica e corpo de confirmacao, inclusive convidado.
+- Documentos: `GET /api/documentos` exige instituicaoId ou reuniaoId. Faltam contrato de upload, resposta de arquivo e download autorizado.
+- Senha: endpoint, token, requisitos e formato para concluir a redefinicao.
+- Reunioes: exclusao/cancelamento e regras de transicao de status.
+
+A exportacao de relatorios ainda e local, com PDF via impressao e CSV; a implementacao atual nao entrega todos os historicos por tipo/periodo.

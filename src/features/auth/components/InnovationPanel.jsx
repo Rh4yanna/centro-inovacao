@@ -1,11 +1,11 @@
-﻿import { Rocket, Sparkles } from "lucide-react";
+import { Rocket, Sparkles } from "lucide-react";
 import "./InnovationPanel.css";
 
 export default function InnovationPanel() {
   return (
     <aside
       className="auth-placeholder innovation-panel"
-      aria-label="hora da inovação"
+      aria-label="Inovacaoguarapuava"
     >
       <div className="innovation-stars" aria-hidden="true" />
       <div className="innovation-stage" aria-hidden="true">
@@ -32,7 +32,7 @@ export default function InnovationPanel() {
         <p>Novas conexões. Infinitas possibilidades.</p>
       </div>
       <span className="innovation-signature" aria-hidden="true">
-        ECOSSISTEMA DE INOVAÇÃO
+        Inovacaoguarapuava
       </span>
     </aside>
   );

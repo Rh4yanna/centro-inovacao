@@ -1,3 +1,4 @@
+import { Attendance } from "./features/Attendance";
 import { useCallback, useEffect, useState } from "react";
 import {
   BrowserRouter,
@@ -40,6 +41,8 @@ import { useDominios } from "./api/dominios-contexto";
 import { useColecao } from "./api/useColecao";
 import { quandoPerderSessao } from "./api/cliente";
 import { instituicoes, representantes, reunioes, sessao } from "./api/recursos";
+import { UsuarioContext } from "./auth/contexto";
+import { podeAbrir } from "./auth/permissoes";
 import "./App.css";
 
 const ICONES = {
@@ -202,7 +205,9 @@ function Workspace({ user, onLogout }) {
             </button>
           </div>
         )}
-        {carregando ? (
+        {!podeAbrir(user, location.pathname) ? (
+          <Card title="Acesso indisponivel"><p>Seu perfil nao tem acesso a esta pagina.</p><NavLink to={nav[0]?.[0] || "/login"}>Voltar</NavLink></Card>
+        ) : carregando ? (
           <p className="empty">Carregando dados...</p>
         ) : (
           <Routes>
@@ -279,6 +284,11 @@ function Workspace({ user, onLogout }) {
               path="/representantes/:id"
               element={
                 <RepresentativeDetail
+                  onDeleted={(id) => {
+                    reps.setItens((items) => items.filter((item) => item.id !== id));
+                    setMessage("Representante excluido com sucesso.");
+                    inst.recarregar();
+                  }}
                   representatives={reps.itens}
                   institutions={inst.itens}
                 />
@@ -320,11 +330,7 @@ function Workspace({ user, onLogout }) {
                     <h1>Presenças</h1>
                     <p>Consulte as reuniões para acompanhar a participação.</p>
                   </header>
-                  <Card title="Registro de presenças">
-                    <p className="empty">
-                      Abra uma reunião para ver a lista de presença.
-                    </p>
-                  </Card>
+                  <Attendance />
                 </>
               }
             />
@@ -383,10 +389,11 @@ function AppRoutes() {
       <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" replace /> : (
         <EsqueciSenhaPage onBackToLogin={() => navigate("/login")} />
       )} />
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
       <Route path="/*" element={user ? (
-        <DominiosProvider>
+        <UsuarioContext.Provider value={user}><DominiosProvider>
           <Workspace user={user} onLogout={sair} />
-        </DominiosProvider>
+        </DominiosProvider></UsuarioContext.Provider>
       ) : <Navigate to="/login" replace />} />
     </Routes>
   );

@@ -48,6 +48,8 @@ export const instituicoes = {
 };
 
 export const representantes = {
+  // Rota provisoria: suporte do backend ainda precisa ser confirmado.
+  excluir: (id) => remover(`/api/representantes/${encodeURIComponent(id)}`),
   listar: () => todasAsPaginas('/api/representantes', representanteDaApi),
   obter: (id) => get(`/api/representantes/${id}`).then(representanteDaApi),
   criar: (form) => post('/api/representantes', representanteParaApi(form)),
@@ -63,7 +65,7 @@ export const reunioes = {
   criar: (form) => post('/api/reunioes', reuniaoParaApi(form)),
   editar: (id, form) => patch(`/api/reunioes/${id}`, reuniaoParaApi(form)),
   participantes: (id) => get(`/api/reunioes/${id}/participantes`),
-  presencas: (id) => get(`/api/reunioes/${id}/presencas`),
+  presencas: (id) => get(`/api/reunioes/${id}/participantes`),
 };
 
 export const indicadores = {

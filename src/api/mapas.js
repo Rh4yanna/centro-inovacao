@@ -135,6 +135,7 @@ export function representanteDaApi(r) {
     role: v.cargo || '',
     status: v.status === 'ativo' ? 'Ativo' : v.status ? 'Inativo' : '',
     vinculoId: v.vinculoId || '',
+    vinculos: r.vinculos || [],
     street: '',
     number: '',
     neighborhood: '',

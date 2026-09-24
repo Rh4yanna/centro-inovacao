@@ -57,6 +57,7 @@ export function Field({
   type = "text",
   placeholder,
   className = "",
+  erro,
 }) {
   return (
     <label className={className}>
@@ -67,6 +68,7 @@ export function Field({
           name={name}
           value={value}
           required={required}
+          aria-invalid={!!erro}
           onChange={onChange}
         >
           <option value="">Selecione</option>
@@ -81,9 +83,11 @@ export function Field({
           onChange={onChange}
           required={required}
           type={type}
+          aria-invalid={!!erro}
           placeholder={placeholder}
         />
       )}
+      {erro && <small className="field-error">{erro}</small>}
     </label>
   );
 }

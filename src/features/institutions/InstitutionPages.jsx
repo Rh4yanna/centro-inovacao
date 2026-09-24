@@ -419,7 +419,7 @@ function Info({ label, value }) {
     </div>
   );
 }
-export function InstitutionDetail({ institutions, onSave, onDelete }) {
+export function InstitutionDetail({ institutions, representatives = [], onSave, onDelete }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const institution = institutions.find((i) => i.id === id);
@@ -433,6 +433,7 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
       </p>
     );
   const i = institution;
+  const linked = representatives.filter(r => r.institutionId === id);
   const date = (v) =>
     v
       ? new Date(v.includes("T") ? v : v + "T12:00:00").toLocaleDateString(
@@ -507,16 +508,9 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
         >
           Visão geral
         </button>
-        {i.status === "Ativa" && (
-          <button
-            className={tab === "representatives" ? "selected" : ""}
-            onClick={() => setTab("representatives")}
-          >
-            Representantes
-          </button>
-        )}
+        {[['representatives','Representantes'],['participations','Participações'],['meetings','Reuniões'],['documents','Documentos']].map(([key,label]) => <button key={key} className={tab === key ? 'selected' : ''} onClick={() => setTab(key)}>{label}</button>)}
       </div>
-      {tab === "overview" || i.status === "Inativa" ? (
+      {tab === "overview" ? (
         <div className="detail-grid">
           <div>
             <Card title="Informações básicas">
@@ -526,7 +520,7 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
                 <Info label="CNPJ" value={i.cnpj} />
                 <Info label="Data de fundação" value={date(i.founded)} />
                 <Info label="E-mail institucional" value={i.email} />
-                <Info label="Número de representantes" value="aguardando back" />
+                <Info label="Número de representantes" value={String(linked.length)} />
                 <Info label="Site" value={i.site} />
               </dl>
             </Card>
@@ -541,7 +535,7 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
             </Card>
             <Card title="Documentos">
               <p className="muted">
-                aguardando back
+                Nenhum registro disponível.
               </p>
             </Card>
           </div>
@@ -570,7 +564,7 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
                   <div key={label}>
                     <small>{label}</small>
                     <strong>—</strong>
-                    <small>aguardando back</small>
+                    <small>Nenhum registro disponível.</small>
                   </div>
                 ))}
               </div>
@@ -586,10 +580,12 @@ export function InstitutionDetail({ institutions, onSave, onDelete }) {
           </div>
         </div>
       ) : (
-        <Card title="Representantes">
-          <p className="empty">
-            aguardando back
-          </p>
+        <Card title={{representatives:'Representantes',participations:'Participações',meetings:'Reuniões',documents:'Documentos'}[tab]}>
+          {tab === 'representatives' ? <>
+            <Link className="button primary" to="/representantes/novo">+ Adicionar representante</Link>
+            <div className="table-scroll"><table><thead><tr><th>Nome</th><th>Cargo / Função</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead><tbody>{linked.map(r => <tr key={r.id}><td>{r.name}</td><td>{r.role}</td><td>{r.email}</td><td><Badge status={r.status}/></td><td><Link className="button" to={`/representantes/${r.id}`}>Ver representante</Link></td></tr>)}</tbody></table></div>
+            {!linked.length && <p className="empty">Nenhum representante vinculado.</p>}
+          </> : <p className="empty">{{participations:'Nenhuma participação registrada para esta instituição.',meetings:'Nenhuma reunião vinculada a esta instituição.',documents:'Nenhum documento cadastrado para esta instituição.'}[tab]}</p>}
         </Card>
       )}
       <Link className="button" to="/instituicoes">

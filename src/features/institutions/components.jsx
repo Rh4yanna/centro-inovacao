@@ -10,7 +10,7 @@ export function Card({ title, children, className = "" }) {
 }
 export function Badge({ status }) {
   return (
-    <span className={`badge ${status === "Ativa" ? "active" : "inactive"}`}>
+    <span className={`badge ${["Ativa", "Ativo", "Realizada"].includes(status) ? "active" : status === "Agendada" ? "scheduled" : "inactive"}`}>
       {status}
     </span>
   );

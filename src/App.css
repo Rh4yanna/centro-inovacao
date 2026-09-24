@@ -985,3 +985,12 @@ td small {
 .meeting-fields {
   margin: 16px 0;
 }
+.people-filters { grid-template-columns: 2fr 1.3fr 1.2fr auto; margin-bottom: 24px; }
+.meeting-filters { margin-bottom: 24px; grid-template-columns: 2fr 1fr 1fr 1fr auto; }
+.person-cell { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: #51068a; color: white; font-weight: 600; }
+.badge.scheduled { color: #c65a00; background: #fff0da; border-color: #ef922f; }
+.tabs { overflow-x: auto; }
+.tabs button { white-space: nowrap; }
+@media (max-width: 1200px) { .people-filters, .meeting-filters { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 540px) { .people-filters, .meeting-filters { grid-template-columns: 1fr; } }

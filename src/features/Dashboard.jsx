@@ -1,12 +1,8 @@
-import { useState } from "react";
 import { Building2, Users, TrendingUp, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Card, Modal } from "./institutions/components";
-import { meetings } from "./institutions/data";
-export default function Dashboard({ institutions, user }) {
-  const [meeting, setMeeting] = useState(null);
-  const [allMeetings, setAllMeetings] = useState(meetings);
-  const [creating, setCreating] = useState(false);
+import { Card } from "./institutions/components";
+import { MeetingTable } from "./ManagementPages";
+export default function Dashboard({ institutions, user, meetings, representatives }) {
   return (
     <>
       <header className="page-heading">
@@ -42,7 +38,7 @@ export default function Dashboard({ institutions, user }) {
               <br />
               impulsionando a colaboração.
             </p>
-            <strong>126</strong>
+            <strong>{representatives.filter(r => r.status === "Ativo").length}</strong>
             <small> representantes</small>
           </section>
         </div>
@@ -63,7 +59,7 @@ export default function Dashboard({ institutions, user }) {
         </div>
       </Card>
       <p className="backend-caption">
-        aguardando back
+        Indicadores de participação ilustrativos.
       </p>
       <div className="two-columns charts">
         <Card>
@@ -150,148 +146,10 @@ export default function Dashboard({ institutions, user }) {
       <Card>
         <div className="section-heading">
           <h2>Próximas reuniões</h2>
-          <button className="primary" onClick={() => setCreating(true)}>
-            + Nova reunião
-          </button>
+          <Link className="button primary" to="/reunioes/nova">+ Nova reunião</Link>
         </div>
-        <div className="table-scroll">
-          <table className="meetings-table">
-            <thead>
-              <tr>
-                {[
-                  "Data",
-                  "Reunião",
-                  "Horário",
-                  "Local",
-                  "Participantes confirmados",
-                  "Ações",
-                ].map((v) => (
-                  <th key={v}>{v}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allMeetings.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <span className="date-badge">
-                      {m.day}
-                      <small>{m.month || "SET"}</small>
-                    </span>
-                  </td>
-                  <td>
-                    <strong>{m.name}</strong>
-                    <small>{m.description}</small>
-                  </td>
-                  <td>{m.time}</td>
-                  <td>
-                    <strong>{m.place}</strong>
-                    <small>{m.address}</small>
-                  </td>
-                  <td className="purple">{m.count} confirmados</td>
-                  <td>
-                    <button onClick={() => setMeeting(m)}>
-                      Ver reunião <ArrowRight />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <MeetingTable meetings={meetings.filter(m => m.status === 'Agendada').sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time)).slice(0,4)} />
       </Card>
-      {creating && (
-        <Modal title="Nova reunião" onClose={() => setCreating(false)}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const data = Object.fromEntries(new FormData(e.currentTarget));
-              setAllMeetings([
-                ...allMeetings,
-                {
-                  ...data,
-                  id: crypto.randomUUID(),
-                  day: data.date.slice(8),
-                  month: new Date(data.date + "T12:00:00")
-                    .toLocaleDateString("pt-BR", { month: "short" })
-                    .replace(".", "")
-                    .toUpperCase(),
-                  count: 0,
-                },
-              ]);
-              setCreating(false);
-            }}
-          >
-            <label>
-              Nome da reunião
-              <input name="name" required />
-            </label>
-            <div className="two-columns meeting-fields">
-              <label>
-                Data
-                <input name="date" type="date" required />
-              </label>
-              <label>
-                Horário
-                <input name="time" type="time" required />
-              </label>
-            </div>
-            <label>
-              Local
-              <input name="place" required />
-            </label>
-            <label className="meeting-fields">
-              Endereço
-              <input name="address" />
-            </label>
-            <label>
-              Descrição
-              <textarea name="description" />
-            </label>
-            <p className="muted meeting-fields">
-              aguardando back
-            </p>
-            <div className="modal-actions">
-              <button type="button" onClick={() => setCreating(false)}>
-                Cancelar
-              </button>
-              <button className="primary">Criar reunião</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {meeting && (
-        <Modal title={meeting.name} onClose={() => setMeeting(null)}>
-          <p>{meeting.description}</p>
-          <dl className="info-grid">
-            <div>
-              <dt>Data e horário</dt>
-              <dd>
-                {meeting.date
-                  ? new Date(meeting.date + "T12:00:00").toLocaleDateString(
-                      "pt-BR",
-                    )
-                  : `${meeting.day}/09/2026`}{" "}
-                às {meeting.time}
-              </dd>
-            </div>
-            <div>
-              <dt>Local</dt>
-              <dd>
-                {meeting.place}
-                <br />
-                {meeting.address}
-              </dd>
-            </div>
-            <div>
-              <dt>Participantes confirmados</dt>
-              <dd>{meeting.count}</dd>
-            </div>
-          </dl>
-          <p className="notice">aguardando back</p>
-          <button onClick={() => setMeeting(null)}>Fechar</button>
-        </Modal>
-      )}
     </>
   );
 }

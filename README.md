@@ -2,8 +2,6 @@
 
 Plataforma web moderna e de alto desempenho desenvolvida para gestão do ecossistema, programas de aceleração, instituições e indicadores de inovação do **Centro de Inovação de Guarapuava e Região**.
 
-> **Nota Importante / Em Desenvolvimento**: As telas, fluxos de navegação e componentes visuais atuais foram estruturados com base nos requisitos iniciais da disciplina. **Esta estrutura pode sofrer alterações e refatorações assim que o protótipo oficial for disponibilizado pela Professora Belle.**
-
 ---
 
 ## Tecnologias Utilizadas

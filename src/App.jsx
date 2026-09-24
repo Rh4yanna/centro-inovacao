@@ -27,6 +27,9 @@ import {
 } from "./features/institutions/InstitutionPages";
 import { initialInstitutions } from "./features/institutions/data";
 import { Card, Modal } from "./features/institutions/components";
+import { Representatives, RepresentativeForm, RepresentativeDetail, Meetings, MeetingForm, MeetingDetail } from './features/ManagementPages';
+import { useLocalCollection } from './features/useLocalCollection';
+import { initialMeetings, initialRepresentatives } from './features/managementData';
 import "./App.css";
 function Workspace({ user, onLogout }) {
   const [institutions, setInstitutions] = useState(() => {
@@ -48,6 +51,12 @@ function Workspace({ user, onLogout }) {
     }
   });
   const [message, setMessage] = useState("");
+  const [representatives, saveRepresentative] = useLocalCollection('eco-representatives', initialRepresentatives);
+  const [meetings, saveMeeting] = useLocalCollection('eco-meetings', initialMeetings);
+  const safelySave = (save, item) => {
+    try { save(item); setMessage('Cadastro salvo com sucesso.'); return true; }
+    catch { setMessage('Não foi possível salvar no navegador. Verifique o espaço disponível.'); return false; }
+  };
   const [notifications, setNotifications] = useState(false);
   const location = useLocation();
   function persist(next) {
@@ -147,7 +156,7 @@ function Workspace({ user, onLogout }) {
         <Routes>
           <Route
             path="/dashboard"
-            element={<Dashboard institutions={institutions} user={user} />}
+            element={<Dashboard institutions={institutions} user={user} meetings={meetings} representatives={representatives} />}
           />
           <Route
             path="/instituicoes"
@@ -177,6 +186,7 @@ function Workspace({ user, onLogout }) {
             path="/instituicoes/:id"
             element={
               <InstitutionDetail
+                representatives={representatives}
                 institutions={institutions}
                 onSave={save}
                 onDelete={(id) => {
@@ -189,25 +199,15 @@ function Workspace({ user, onLogout }) {
               />
             }
           />
-          {nav.slice(2).map(([path, label]) => (
-            <Route
-              key={path}
-              path={path}
-              element={
-                <>
-                  <header className="page-heading">
-                    <h1>{label}</h1>
-                    <p>Ecossistema de Inovação</p>
-                  </header>
-                  <Card title={label}>
-                    <p className="empty">
-                      aguardando back
-                    </p>
-                  </Card>
-                </>
-              }
-            />
-          ))}
+          <Route path="/representantes" element={<Representatives representatives={representatives} institutions={institutions} />} />
+          <Route path="/representantes/novo" element={<RepresentativeForm key="new-person" representatives={representatives} institutions={institutions} onSave={v => safelySave(saveRepresentative,v)} />} />
+          <Route path="/representantes/:id/editar" element={<RepresentativeForm key={location.pathname} representatives={representatives} institutions={institutions} onSave={v => safelySave(saveRepresentative,v)} />} />
+          <Route path="/representantes/:id" element={<RepresentativeDetail representatives={representatives} institutions={institutions} />} />
+          <Route path="/reunioes" element={<Meetings meetings={meetings} />} />
+          <Route path="/reunioes/nova" element={<MeetingForm key="new-meeting" meetings={meetings} onSave={v => safelySave(saveMeeting,{...v,organizer:user.name})} />} />
+          <Route path="/reunioes/:id/editar" element={<MeetingForm key={location.pathname} meetings={meetings} onSave={v => safelySave(saveMeeting,v)} />} />
+          <Route path="/reunioes/:id" element={<MeetingDetail meetings={meetings} />} />
+          <Route path="/presencas" element={<><header className="page-heading"><h1>Presenças</h1><p>Consulte as reuniões para acompanhar a participação.</p></header><Card title="Registro de presenças"><p className="empty">Nenhuma presença registrada.</p></Card></>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>

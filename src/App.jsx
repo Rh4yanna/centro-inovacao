@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -25,74 +25,107 @@ import {
   InstitutionForm,
   InstitutionDetail,
 } from "./features/institutions/InstitutionPages";
-import { initialInstitutions } from "./features/institutions/data";
 import { Card, Modal } from "./features/institutions/components";
-import { Representatives, RepresentativeForm, RepresentativeDetail, Meetings, MeetingForm, MeetingDetail } from './features/ManagementPages';
-import { useLocalCollection } from './features/useLocalCollection';
-import { initialMeetings, initialRepresentatives } from './features/managementData';
+import {
+  Representatives,
+  RepresentativeForm,
+  RepresentativeDetail,
+  Meetings,
+  MeetingForm,
+  MeetingDetail,
+} from "./features/ManagementPages";
+import { DominiosProvider } from "./api/dominios";
+import { useDominios } from "./api/dominios-contexto";
+import { useColecao } from "./api/useColecao";
+import { quandoPerderSessao } from "./api/cliente";
+import { instituicoes, representantes, reunioes, sessao } from "./api/recursos";
 import "./App.css";
+
+const ICONES = {
+  "/dashboard": House,
+  "/instituicoes": Building2,
+  "/representantes": Users,
+  "/reunioes": CalendarDays,
+  "/presencas": QrCode,
+};
+
 function Workspace({ user, onLogout }) {
-  const [institutions, setInstitutions] = useState(() => {
-    try {
-      const data = JSON.parse(localStorage.getItem("eco-institutions"));
-      return Array.isArray(data) &&
-        data.every(
-          (i) =>
-            i &&
-            typeof i.id === "string" &&
-            typeof i.name === "string" &&
-            typeof i.cnpj === "string" &&
-            typeof i.description === "string",
-        )
-        ? data
-        : initialInstitutions;
-    } catch {
-      return initialInstitutions;
-    }
-  });
+  const dominios = useDominios();
   const [message, setMessage] = useState("");
-  const [representatives, saveRepresentative] = useLocalCollection('eco-representatives', initialRepresentatives);
-  const [meetings, saveMeeting] = useLocalCollection('eco-meetings', initialMeetings);
-  const safelySave = (save, item) => {
-    try { save(item); setMessage('Cadastro salvo com sucesso.'); return true; }
-    catch { setMessage('Não foi possível salvar no navegador. Verifique o espaço disponível.'); return false; }
-  };
   const [notifications, setNotifications] = useState(false);
   const location = useLocation();
-  function persist(next) {
+
+  const listarInstituicoes = useCallback(() => instituicoes.listar(), []);
+  const listarRepresentantes = useCallback(() => representantes.listar(), []);
+  const listarReunioes = useCallback(() => reunioes.listar(), []);
+
+  const inst = useColecao(listarInstituicoes);
+  const reps = useColecao(listarRepresentantes);
+  const meets = useColecao(listarReunioes);
+
+  // Toda gravação recarrega a lista: quem manda no dado é o banco.
+  // Devolve true, ou o erro — o formulário usa ele para marcar os campos.
+  const gravar = async (acao, recarregar, sucesso) => {
     try {
-      localStorage.setItem("eco-institutions", JSON.stringify(next));
-      setInstitutions(next);
+      await acao();
+      await recarregar();
+      setMessage(sucesso);
       return true;
-    } catch {
-      setMessage(
-        "Não foi possível salvar no navegador. Verifique o espaço disponível e as permissões de armazenamento.",
-      );
-      return false;
+    } catch (e) {
+      setMessage(e.message);
+      return e;
     }
-  }
-  function save(institution) {
-    const existing = institutions.find((i) => i.id === institution.id);
-    institution = {
-      ...institution,
-      createdBy: existing ? existing.createdBy : user.name,
-      updatedBy: user.name,
-    };
-    const result = persist(
-      institutions.some((i) => i.id === institution.id)
-        ? institutions.map((i) => (i.id === institution.id ? institution : i))
-        : [...institutions, institution],
+  };
+
+  async function salvarInstituicao(form) {
+    const existente = inst.itens.some((i) => i.id === form.id);
+    return gravar(
+      () =>
+        existente
+          ? instituicoes.editar(form.id, form, dominios)
+          : instituicoes.criar(form, dominios),
+      inst.recarregar,
+      "Instituição salva com sucesso.",
     );
-    if (result) setMessage("Instituição salva com sucesso.");
-    return result;
   }
-  const nav = [
-    ["/dashboard", "Dashboard", House],
-    ["/instituicoes", "Instituições", Building2],
-    ["/representantes", "Representantes", Users],
-    ["/reunioes", "Reuniões", CalendarDays],
-    ["/presencas", "Presenças", QrCode],
-  ];
+
+  async function trocarStatusInstituicao(id, rotulo) {
+    return gravar(
+      () => instituicoes.trocarStatus(id, rotulo),
+      inst.recarregar,
+      `Instituição marcada como ${rotulo.toLowerCase()}.`,
+    );
+  }
+
+  async function salvarRepresentante(form) {
+    const existente = reps.itens.some((r) => r.id === form.id);
+    return gravar(
+      () =>
+        existente
+          ? representantes.editar(form.id, form)
+          : representantes.criar(form),
+      reps.recarregar,
+      "Representante salvo com sucesso.",
+    );
+  }
+
+  async function salvarReuniao(form) {
+    const existente = meets.itens.some((m) => m.id === form.id);
+    return gravar(
+      () => (existente ? reunioes.editar(form.id, form) : reunioes.criar(form)),
+      meets.recarregar,
+      "Reunião salva com sucesso.",
+    );
+  }
+
+  // O menu vem da API: cada papel enxerga só o que pode acessar.
+  const nav = (user.menu || [])
+    .filter((item) => ICONES[item.href])
+    .map((item) => [item.href, item.rotulo, ICONES[item.href]]);
+
+  const carregando = inst.carregando || reps.carregando || meets.carregando;
+  const falha = inst.erro || reps.erro || meets.erro;
+
   return (
     <div className="workspace">
       <aside className="sidebar">
@@ -107,8 +140,8 @@ function Workspace({ user, onLogout }) {
         <div className="user-block">
           <CircleUserRound />
           <div>
-            <strong>{user.name}</strong>
-            <small>{user.identifier}</small>
+            <strong>{user.nome}</strong>
+            <small>{user.rotuloPapel || user.email}</small>
           </div>
           <button
             className="icon-button"
@@ -153,86 +186,194 @@ function Workspace({ user, onLogout }) {
             </button>
           </div>
         )}
-        <Routes>
-          <Route
-            path="/dashboard"
-            element={<Dashboard institutions={institutions} user={user} meetings={meetings} representatives={representatives} />}
-          />
-          <Route
-            path="/instituicoes"
-            element={<InstitutionList institutions={institutions} />}
-          />
-          <Route
-            path="/instituicoes/nova"
-            element={
-              <InstitutionForm
-                key="new"
-                institutions={institutions}
-                onSave={save}
-              />
-            }
-          />
-          <Route
-            path="/instituicoes/:id/editar"
-            element={
-              <InstitutionForm
-                key={location.pathname}
-                institutions={institutions}
-                onSave={save}
-              />
-            }
-          />
-          <Route
-            path="/instituicoes/:id"
-            element={
-              <InstitutionDetail
-                representatives={representatives}
-                institutions={institutions}
-                onSave={save}
-                onDelete={(id) => {
-                  const result = persist(
-                    institutions.filter((i) => i.id !== id),
-                  );
-                  if (result) setMessage("Instituição excluída.");
-                  return result;
-                }}
-              />
-            }
-          />
-          <Route path="/representantes" element={<Representatives representatives={representatives} institutions={institutions} />} />
-          <Route path="/representantes/novo" element={<RepresentativeForm key="new-person" representatives={representatives} institutions={institutions} onSave={v => safelySave(saveRepresentative,v)} />} />
-          <Route path="/representantes/:id/editar" element={<RepresentativeForm key={location.pathname} representatives={representatives} institutions={institutions} onSave={v => safelySave(saveRepresentative,v)} />} />
-          <Route path="/representantes/:id" element={<RepresentativeDetail representatives={representatives} institutions={institutions} />} />
-          <Route path="/reunioes" element={<Meetings meetings={meetings} />} />
-          <Route path="/reunioes/nova" element={<MeetingForm key="new-meeting" meetings={meetings} onSave={v => safelySave(saveMeeting,{...v,organizer:user.name})} />} />
-          <Route path="/reunioes/:id/editar" element={<MeetingForm key={location.pathname} meetings={meetings} onSave={v => safelySave(saveMeeting,v)} />} />
-          <Route path="/reunioes/:id" element={<MeetingDetail meetings={meetings} />} />
-          <Route path="/presencas" element={<><header className="page-heading"><h1>Presenças</h1><p>Consulte as reuniões para acompanhar a participação.</p></header><Card title="Registro de presenças"><p className="empty">Nenhuma presença registrada.</p></Card></>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        {falha && (
+          <div role="alert" className="toast">
+            {falha}
+            <button
+              className="text-button"
+              onClick={() => {
+                inst.recarregar();
+                reps.recarregar();
+                meets.recarregar();
+              }}
+            >
+              Tentar de novo
+            </button>
+          </div>
+        )}
+        {carregando ? (
+          <p className="empty">Carregando dados...</p>
+        ) : (
+          <Routes>
+            <Route
+              path="/dashboard"
+              element={<Dashboard user={user} meetings={meets.itens} />}
+            />
+            <Route
+              path="/instituicoes"
+              element={<InstitutionList institutions={inst.itens} />}
+            />
+            <Route
+              path="/instituicoes/nova"
+              element={
+                <InstitutionForm key="new" onSave={salvarInstituicao} />
+              }
+            />
+            <Route
+              path="/instituicoes/:id/editar"
+              element={
+                <InstitutionForm
+                  key={location.pathname}
+                  onSave={salvarInstituicao}
+                />
+              }
+            />
+            <Route
+              path="/instituicoes/:id"
+              element={
+                <InstitutionDetail
+                  onTrocarStatus={trocarStatusInstituicao}
+                  onDelete={(id) =>
+                    gravar(
+                      () => instituicoes.excluir(id),
+                      inst.recarregar,
+                      "Instituição excluída.",
+                    )
+                  }
+                />
+              }
+            />
+            <Route
+              path="/representantes"
+              element={
+                <Representatives
+                  representatives={reps.itens}
+                  institutions={inst.itens}
+                />
+              }
+            />
+            <Route
+              path="/representantes/novo"
+              element={
+                <RepresentativeForm
+                  key="new-person"
+                  representatives={reps.itens}
+                  institutions={inst.itens}
+                  onSave={salvarRepresentante}
+                />
+              }
+            />
+            <Route
+              path="/representantes/:id/editar"
+              element={
+                <RepresentativeForm
+                  key={location.pathname}
+                  representatives={reps.itens}
+                  institutions={inst.itens}
+                  onSave={salvarRepresentante}
+                />
+              }
+            />
+            <Route
+              path="/representantes/:id"
+              element={
+                <RepresentativeDetail
+                  representatives={reps.itens}
+                  institutions={inst.itens}
+                />
+              }
+            />
+            <Route
+              path="/reunioes"
+              element={<Meetings meetings={meets.itens} />}
+            />
+            <Route
+              path="/reunioes/nova"
+              element={
+                <MeetingForm
+                  key="new-meeting"
+                  meetings={meets.itens}
+                  onSave={salvarReuniao}
+                />
+              }
+            />
+            <Route
+              path="/reunioes/:id/editar"
+              element={
+                <MeetingForm
+                  key={location.pathname}
+                  meetings={meets.itens}
+                  onSave={salvarReuniao}
+                />
+              }
+            />
+            <Route
+              path="/reunioes/:id"
+              element={<MeetingDetail meetings={meets.itens} />}
+            />
+            <Route
+              path="/presencas"
+              element={
+                <>
+                  <header className="page-heading">
+                    <h1>Presenças</h1>
+                    <p>Consulte as reuniões para acompanhar a participação.</p>
+                  </header>
+                  <Card title="Registro de presenças">
+                    <p className="empty">
+                      Abra uma reunião para ver a lista de presença.
+                    </p>
+                  </Card>
+                </>
+              }
+            />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        )}
       </main>
       {notifications && (
         <Modal title="Notificações" onClose={() => setNotifications(false)}>
-          <p className="empty">aguardando back</p>
+          <p className="empty">Nenhuma notificação.</p>
           <button onClick={() => setNotifications(false)}>Fechar</button>
         </Modal>
       )}
     </div>
   );
 }
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [forgot, setForgot] = useState(false);
+  const [verificando, setVerificando] = useState(true);
+
+  // O cookie sobrevive ao F5, então a sessão é recuperada do servidor.
+  useEffect(() => {
+    quandoPerderSessao(() => setUser(null));
+    sessao
+      .atual()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setVerificando(false));
+  }, []);
+
+  async function sair() {
+    try {
+      await sessao.sair();
+    } catch {
+      // Sair não pode falhar para o usuário: o cookie expira sozinho.
+    }
+    setUser(null);
+    setForgot(false);
+  }
+
+  if (verificando) return <p className="empty">Carregando...</p>;
+
   return (
     <BrowserRouter>
       {user ? (
-        <Workspace
-          user={user}
-          onLogout={() => {
-            setUser(null);
-            setForgot(false);
-          }}
-        />
+        <DominiosProvider>
+          <Workspace user={user} onLogout={sair} />
+        </DominiosProvider>
       ) : forgot ? (
         <EsqueciSenhaPage onBackToLogin={() => setForgot(false)} />
       ) : (

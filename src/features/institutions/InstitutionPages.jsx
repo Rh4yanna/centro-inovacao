@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   Eye,
@@ -10,8 +10,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Card, Badge, Field, Modal, ReportModal } from "./components";
-import { types, states, emptyInstitution } from "./data";
+import { states, emptyInstitution } from "./data";
+import { useDominios } from "../../api/dominios-contexto";
+import { instituicoes } from "../../api/recursos";
 export function InstitutionList({ institutions }) {
+  const dominios = useDominios();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
@@ -56,8 +59,8 @@ export function InstitutionList({ institutions }) {
             </div>
           </label>
           {[
-            ["Status", status, setStatus, ["Ativa", "Inativa"]],
-            ["Tipo", type, setType, types],
+            ["Status", status, setStatus, dominios.statusInstituicao],
+            ["Tipo", type, setType, dominios.tipos],
             [
               "Cidade",
               city,
@@ -213,18 +216,32 @@ export function InstitutionList({ institutions }) {
     </>
   );
 }
-export function InstitutionForm({ institutions, onSave }) {
+export function InstitutionForm({ onSave }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const existing = institutions.find((i) => i.id === id);
-  const [form, setForm] = useState(() => existing || { ...emptyInstitution });
+  const dominios = useDominios();
+  const [form, setForm] = useState({ ...emptyInstitution });
   const [error, setError] = useState("");
-  if (id && !existing)
-    return (
-      <p>
-        Instituição não encontrada. <Link to="/instituicoes">Voltar</Link>
-      </p>
-    );
+  const [porCampo, setPorCampo] = useState({});
+  const [carregando, setCarregando] = useState(!!id);
+  const [enviando, setEnviando] = useState(false);
+
+  // A listagem traz um resumo; para editar é preciso o registro inteiro.
+  useEffect(() => {
+    if (!id) return;
+    let vivo = true;
+    instituicoes
+      .obter(id)
+      .then((i) => vivo && setForm({ ...emptyInstitution, ...i }))
+      .catch((e) => vivo && setError(e.message))
+      .finally(() => vivo && setCarregando(false));
+    return () => {
+      vivo = false;
+    };
+  }, [id]);
+
+  if (carregando) return <p className="empty">Carregando instituição...</p>;
+
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const field = (name, label, options = {}) => (
     <Field
@@ -233,38 +250,31 @@ export function InstitutionForm({ institutions, onSave }) {
       label={label}
       value={form[name]}
       onChange={change}
+      erro={porCampo[MAPA_ERRO[name]]}
       {...options}
     />
   );
-  function submit(e) {
+
+  async function submit(e) {
     e.preventDefault();
+    setError("");
+    setPorCampo({});
     if (form.cnpj.replace(/\D/g, "").length !== 14) {
       setError("Informe um CNPJ com 14 dígitos.");
       return;
     }
-    if (
-      institutions.some(
-        (i) =>
-          i.id !== id &&
-          i.cnpj.replace(/\D/g, "") === form.cnpj.replace(/\D/g, ""),
-      )
-    ) {
-      setError("Já existe uma instituição com este CNPJ.");
-      return;
-    }
-    const saved = {
-      ...form,
-      name: form.name.trim(),
-      id: id || crypto.randomUUID(),
-      createdAt: existing?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    if (!saved.name) {
+    if (!form.name.trim()) {
       setError("Informe o nome da instituição.");
       return;
     }
-    if (onSave(saved)) navigate(`/instituicoes/${saved.id}`);
+    setEnviando(true);
+    // A validação de verdade é a do servidor; ele devolve erro por campo.
+    const r = await onSave({ ...form, name: form.name.trim(), id });
+    if (r === true) return navigate("/instituicoes");
+    setEnviando(false);
+    if (r?.porCampo) setPorCampo(r.porCampo());
   }
+
   return (
     <>
       <header className="page-heading">
@@ -295,7 +305,7 @@ export function InstitutionForm({ institutions, onSave }) {
             })}
             {field("status", "Status", {
               required: true,
-              options: ["Ativa", "Inativa"],
+              options: dominios.statusInstituicao,
               className: "span-2",
             })}
             {field("email", "E-mail institucional", {
@@ -311,7 +321,7 @@ export function InstitutionForm({ institutions, onSave }) {
             })}
             {field("site", "Site", {
               className: "span-3",
-              placeholder: "Instituicao.com.br",
+              placeholder: "https://instituicao.com.br",
             })}
           </div>
         </Card>
@@ -356,22 +366,12 @@ export function InstitutionForm({ institutions, onSave }) {
           <div className="form-grid">
             {field("type", "Tipo de instituição", {
               required: true,
-              options: types,
+              options: dominios.tipos,
               className: "span-3",
             })}
             {field("area", "Área de atuação", {
               required: true,
-              options: [
-                "Educação",
-                "Tecnologia",
-                "Pesquisa",
-                "Saúde",
-                "Indústria",
-                "Comércio",
-                "Serviços",
-                "Agronegócio",
-                "Outra",
-              ],
+              options: dominios.areas,
               className: "span-3",
             })}
             <label className="span-10">
@@ -403,14 +403,38 @@ export function InstitutionForm({ institutions, onSave }) {
           >
             Cancelar
           </button>
-          <button className="primary">
-            {id ? "Salvar alterações" : "Cadastrar instituição"}
+          <button className="primary" disabled={enviando}>
+            {enviando
+              ? "Salvando..."
+              : id
+                ? "Salvar alterações"
+                : "Cadastrar instituição"}
           </button>
         </div>
       </form>
     </>
   );
 }
+// Liga o nome do input ao nome que a API usa no erro.
+const MAPA_ERRO = {
+  name: "nome",
+  cnpj: "cnpj",
+  founded: "dataFundacao",
+  status: "status",
+  email: "email",
+  phone: "telefone",
+  site: "site",
+  street: "logradouro",
+  number: "numero",
+  neighborhood: "bairro",
+  city: "cidade",
+  state: "estado",
+  zip: "cep",
+  complement: "complemento",
+  type: "tipoInstituicaoId",
+  area: "areaAtuacaoId",
+  description: "descricao",
+};
 function Info({ label, value }) {
   return (
     <div>
@@ -419,21 +443,43 @@ function Info({ label, value }) {
     </div>
   );
 }
-export function InstitutionDetail({ institutions, representatives = [], onSave, onDelete }) {
+export function InstitutionDetail({ onTrocarStatus, onDelete }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const institution = institutions.find((i) => i.id === id);
+  const [institution, setInstitution] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [falha, setFalha] = useState("");
   const [menu, setMenu] = useState(false);
   const [modal, setModal] = useState(null);
   const [tab, setTab] = useState("overview");
-  if (!institution)
+
+  // Mudar esta chave refaz a busca (depois de ativar/desativar, por exemplo).
+  const [chave, setChave] = useState(0);
+  const buscar = () => setChave((n) => n + 1);
+
+  useEffect(() => {
+    let vivo = true;
+    instituicoes
+      .obter(id)
+      .then((d) => vivo && setInstitution(d))
+      .catch((e) => vivo && setFalha(e.message))
+      .finally(() => vivo && setCarregando(false));
+    return () => {
+      vivo = false;
+    };
+  }, [id, chave]);
+
+  if (carregando) return <p className="empty">Carregando instituição...</p>;
+  if (falha || !institution)
     return (
       <p>
-        Instituição não encontrada. <Link to="/instituicoes">Voltar</Link>
+        {falha || "Instituição não encontrada."}{" "}
+        <Link to="/instituicoes">Voltar</Link>
       </p>
     );
   const i = institution;
-  const linked = representatives.filter(r => r.institutionId === id);
+  const linked = i.representantes || [];
+  const p = i.participacao || {};
   const date = (v) =>
     v
       ? new Date(v.includes("T") ? v : v + "T12:00:00").toLocaleDateString(
@@ -458,13 +504,10 @@ export function InstitutionDetail({ institutions, representatives = [], onSave, 
             className={
               i.status === "Ativa" ? "danger-outline" : "success-outline"
             }
-            onClick={() =>
-              onSave({
-                ...i,
-                status: i.status === "Ativa" ? "Inativa" : "Ativa",
-                updatedAt: new Date().toISOString(),
-              })
-            }
+            onClick={async () => {
+              const alvo = i.status === "Ativa" ? "Inativa" : "Ativa";
+              if (await onTrocarStatus(id, alvo)) buscar();
+            }}
           >
             {i.status === "Ativa" ? "Desativar" : "Ativar"} instituição
           </button>
@@ -520,7 +563,7 @@ export function InstitutionDetail({ institutions, representatives = [], onSave, 
                 <Info label="CNPJ" value={i.cnpj} />
                 <Info label="Data de fundação" value={date(i.founded)} />
                 <Info label="E-mail institucional" value={i.email} />
-                <Info label="Número de representantes" value={String(linked.length)} />
+                <Info label="Número de representantes" value={String(i.totalRepresentantes ?? linked.length)} />
                 <Info label="Site" value={i.site} />
               </dl>
             </Card>
@@ -556,15 +599,20 @@ export function InstitutionDetail({ institutions, representatives = [], onSave, 
             <Card title="Resumo de participação">
               <div className="summary-grid">
                 {[
-                  "Participações totais",
-                  "Reuniões participadas",
-                  "Média de presença",
-                  "Última participação",
-                ].map((label) => (
+                  ["Participações totais", p.participacoesTotais],
+                  ["Reuniões participadas", p.reunioesParticipadas],
+                  [
+                    "Média de presença",
+                    p.mediaPresenca == null ? null : `${p.mediaPresenca}%`,
+                  ],
+                  ["Última participação", p.ultimaParticipacao && date(p.ultimaParticipacao)],
+                ].map(([label, valor]) => (
                   <div key={label}>
                     <small>{label}</small>
-                    <strong>—</strong>
-                    <small>Nenhum registro disponível.</small>
+                    <strong>{valor ?? "—"}</strong>
+                    <small>
+                      {valor == null ? "Nenhum registro disponível." : ""}
+                    </small>
                   </div>
                 ))}
               </div>
@@ -613,8 +661,8 @@ export function InstitutionDetail({ institutions, representatives = [], onSave, 
             <button onClick={() => setModal(null)}>Cancelar</button>
             <button
               className="danger"
-              onClick={() => {
-                if (onDelete(id)) navigate("/instituicoes");
+              onClick={async () => {
+                if ((await onDelete(id)) === true) navigate("/instituicoes");
               }}
             >
               Excluir instituição

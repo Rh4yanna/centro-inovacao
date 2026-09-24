@@ -994,3 +994,12 @@ td small {
 .tabs button { white-space: nowrap; }
 @media (max-width: 1200px) { .people-filters, .meeting-filters { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 540px) { .people-filters, .meeting-filters { grid-template-columns: 1fr; } }
+
+.field-error {
+  color: #c02626;
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+[aria-invalid="true"] {
+  border-color: #c02626;
+}

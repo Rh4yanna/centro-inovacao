@@ -1,4 +1,23 @@
 import { test, expect } from '@playwright/test';
+
+test('falha ao sair mantém sessão e permite repetir o logout', async ({page}) => {
+  await mockApi(page);
+  let falhar = true;
+  await page.route('**/api/sessao', async route => {
+    if (route.request().method() !== 'DELETE') return route.fallback();
+    return falhar
+      ? route.fulfill({status:503,json:{erro:{mensagem:'Indisponível'}}})
+      : route.fulfill({status:204});
+  });
+  await page.goto('/representantes');
+  await page.getByRole('button',{name:'Sair',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('Não foi possível encerrar a sessão');
+  await expect(page).toHaveURL(/\/representantes$/);
+  falhar = false;
+  await page.getByRole('button',{name:'Sair',exact:true}).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
 async function mockApi(page, role = 'leitura') {
   await page.route('**/api/**', async route => {
     const p = new URL(route.request().url()).pathname;
@@ -59,7 +78,7 @@ test('exclusão exige confirmação e mantém cadastro se backend não suporta',
   expect(calls()).toBe(0);
   await page.getByRole('button',{name:'Excluir representante',exact:true}).click();
   await page.getByRole('button',{name:'Confirmar exclusão'}).click();
-  await expect(page.getByRole('alert')).toContainText('A API não disponibilizou');
+  await expect(page.getByRole('alert').filter({hasText:'A API não disponibilizou'})).toBeVisible();
   await expect(page).toHaveURL(/\/representantes\/teste$/);
   expect(calls()).toBe(1);
 });

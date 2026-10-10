@@ -42,7 +42,11 @@ import { useColecao } from "./api/useColecao";
 import { quandoPerderSessao } from "./api/cliente";
 import { instituicoes, representantes, reunioes, sessao } from "./api/recursos";
 import { UsuarioContext } from "./auth/contexto";
-import { podeAbrir } from "./auth/permissoes";
+import { podeAbrir, menuDoUsuario, representanteInstitucional } from "./auth/permissoes";
+import PublicDashboard from "./features/governance/PublicDashboard";
+import { Events, EventPage } from "./features/governance/Events";
+import { InstitutionArea, Approvals } from "./features/governance/InstitutionArea";
+import { Checkin } from "./features/governance/Participation";
 import "./App.css";
 
 const ICONES = {
@@ -51,6 +55,9 @@ const ICONES = {
   "/representantes": Users,
   "/reunioes": CalendarDays,
   "/presencas": QrCode,
+  "/eventos": CalendarDays,
+  "/solicitacoes": Bell,
+  "/minha-instituicao": Building2,
 };
 
 function Workspace({ user, onLogout }) {
@@ -59,9 +66,9 @@ function Workspace({ user, onLogout }) {
   const [notifications, setNotifications] = useState(false);
   const location = useLocation();
 
-  const listarInstituicoes = useCallback(() => instituicoes.listar(), []);
-  const listarRepresentantes = useCallback(() => representantes.listar(), []);
-  const listarReunioes = useCallback(() => reunioes.listar(), []);
+  const listarInstituicoes = useCallback(() => podeAbrir(user, "/instituicoes") ? instituicoes.listar() : Promise.resolve([]), [user]);
+  const listarRepresentantes = useCallback(() => podeAbrir(user, "/representantes") ? representantes.listar() : Promise.resolve([]), [user]);
+  const listarReunioes = useCallback(() => podeAbrir(user, "/reunioes") ? reunioes.listar() : Promise.resolve([]), [user]);
 
   const inst = useColecao(listarInstituicoes);
   const reps = useColecao(listarRepresentantes);
@@ -123,7 +130,7 @@ function Workspace({ user, onLogout }) {
   }
 
   // O menu vem da API: cada papel enxerga só o que pode acessar.
-  const nav = (user.menu || [])
+  const nav = menuDoUsuario(user)
     .filter((item) => ICONES[item.href])
     .map((item) => [item.href, item.rotulo, ICONES[item.href]]);
 
@@ -213,7 +220,7 @@ function Workspace({ user, onLogout }) {
           <Routes>
             <Route
               path="/dashboard"
-              element={<Dashboard user={user} meetings={meets.itens} />}
+              element={representanteInstitucional(user) ? <PublicDashboard /> : <Dashboard user={user} meetings={meets.itens} />}
             />
             <Route
               path="/instituicoes"
@@ -334,6 +341,12 @@ function Workspace({ user, onLogout }) {
                 </>
               }
             />
+            <Route path="/eventos" element={<Events />} />
+            <Route path="/eventos/novo" element={<EventPage creating />} />
+            <Route path="/eventos/:id/editar" element={<EventPage editing />} />
+            <Route path="/eventos/:id" element={<EventPage />} />
+            <Route path="/minha-instituicao" element={<InstitutionArea />} />
+            <Route path="/solicitacoes" element={<Approvals />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         )}
@@ -350,8 +363,10 @@ function Workspace({ user, onLogout }) {
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [verificando, setVerificando] = useState(true);
+  const [erroSessao, setErroSessao] = useState("");
 
   // O cookie sobrevive ao F5, então a sessão é recuperada do servidor.
   useEffect(() => {
@@ -364,10 +379,14 @@ function AppRoutes() {
   }, []);
 
   async function sair() {
+    setErroSessao("");
     try {
       await sessao.sair();
-    } catch {
-      // Sair não pode falhar para o usuário: o cookie expira sozinho.
+    } catch (erro) {
+      if (erro.status !== 401) {
+        setErroSessao("Não foi possível encerrar a sessão. Verifique sua conexão e tente sair novamente.");
+        return;
+      }
     }
     setUser(null);
     navigate("/login", { replace: true });
@@ -376,26 +395,33 @@ function AppRoutes() {
   if (verificando) return <p className="empty">Carregando...</p>;
 
   return (
+    <>
+    {erroSessao && <div role="alert" className="toast">{erroSessao}</div>}
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : (
         <LoginPage
           onNavigateToForgot={() => navigate("/esqueci-senha")}
           onLoginSuccess={(loggedUser) => {
             setUser(loggedUser);
-            navigate("/dashboard", { replace: true });
+            const retorno = new URLSearchParams(location.search).get("retorno");
+            navigate(retorno?.startsWith("/checkin/") && !retorno.includes("//") ? retorno : "/dashboard", { replace: true });
           }}
         />
       )} />
       <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" replace /> : (
         <EsqueciSenhaPage onBackToLogin={() => navigate("/login")} />
       )} />
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/publico" element={<PublicDashboard />} />
+      <Route path="/checkin/:token" element={<Checkin />} />
+      {!user && <Route path="/dashboard" element={<PublicDashboard />} />}
       <Route path="/*" element={user ? (
         <UsuarioContext.Provider value={user}><DominiosProvider>
           <Workspace user={user} onLogout={sair} />
         </DominiosProvider></UsuarioContext.Provider>
       ) : <Navigate to="/login" replace />} />
     </Routes>
+    </>
   );
 }
 

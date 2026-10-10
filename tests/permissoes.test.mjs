@@ -1,7 +1,26 @@
 ﻿import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { podeAbrir, podeEditar, podeExcluir } from '../src/auth/permissoes.js';
+import { menuDoUsuario } from '../src/auth/permissoes.js';
 const usuario = papel => ({papel, menu:[{href:'/instituicoes'}, {href:'/reunioes'}]});
+test('representante institucional tem acesso somente à sua área e ao painel público', () => {
+  const u = usuario('representante_instituicao');
+  assert.equal(podeAbrir(u, '/minha-instituicao'), true);
+  assert.equal(podeAbrir(u, '/instituicoes/123'), false);
+  assert.equal(podeAbrir(u, '/presencas'), false);
+  assert.equal(podeEditar(u), false);
+  assert.equal(menuDoUsuario(u).length, 2);
+});
+test('diretoria aprova alterações, gerencia atividades e não exclui registros', () => {
+  const u = usuario('diretoria');
+  assert.equal(podeAbrir(u, '/solicitacoes'), true);
+  assert.equal(podeAbrir(u, '/eventos/novo'), true);
+  assert.equal(podeAbrir(u, '/instituicoes/123/editar'), false);
+  assert.equal(podeAbrir(u, '/instituicoes/nova'), false);
+  assert.equal(podeExcluir(u), false);
+  assert.equal(podeExcluir(usuario('admin_geral')), true);
+  assert.equal(podeAbrir(usuario('desconhecido'), '/instituicoes'), false);
+});
 test('consulta pode ler, mas não abrir formulários por URL', () => {
   const u = usuario('leitura');
   assert.equal(podeAbrir(u, '/instituicoes/123'), true);

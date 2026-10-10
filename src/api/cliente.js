@@ -23,7 +23,7 @@ export function quandoPerderSessao(fn) {
 }
 
 export async function api(caminho, opcoes = {}) {
-  const { corpo, metodo = 'GET', ...resto } = opcoes;
+  const { corpo, formData, metodo = 'GET', ...resto } = opcoes;
   let resposta;
   try {
     resposta = await fetch(`${BASE}${caminho}`, {
@@ -31,7 +31,7 @@ export async function api(caminho, opcoes = {}) {
       method: metodo,
       credentials: 'include',
       headers: corpo ? { 'Content-Type': 'application/json' } : undefined,
-      body: corpo ? JSON.stringify(corpo) : undefined,
+      body: formData || (corpo ? JSON.stringify(corpo) : undefined),
     });
   } catch {
     throw new ErroDaApi(0, {

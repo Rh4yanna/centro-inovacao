@@ -39,3 +39,7 @@ O quadro menciona Next.js/App Router, shadcn/ui e Atomic Design. A implementaç�
 ## Verificação desta revisão
 
 Três testes unitários de permissão passaram. Oito cenários de navegador (quatro em desktop e quatro em celular) passaram com API simulada: redirecionamento/recuperação, bloqueio de consulta, acesso de gestor e filtros de presença/largura da página. As consultas reais confirmaram o formato de participantes e vínculos, mas não foram feitas mutações em produção.
+
+## Atualização de outubro/2026
+
+As telas de eventos, área institucional, aprovação, documentos, credenciamento e check-in público agora estão preparadas no frontend. O dashboard também possui entrada pública. Esses módulos dependem da implementação do contrato novo; as pendências acima devem ser lidas junto com [o estado atualizado](ajustes-professora.md) e [o prompt para o backend](prompt-backend.md).

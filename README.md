@@ -54,3 +54,12 @@ O deploy via CLI já foi utilizado. A conexão automática entre GitHub e Vercel
 - [Conferência das telas](docs/conferencia-telas.md)
 
 Os módulos pendentes e limites devem ser conferidos nesses documentos antes da entrega. Build/lint aprovados não equivalem a testes completos dos fluxos no navegador.
+
+## Ajustes do Fórum CTI (outubro/2026)
+
+O frontend contém telas públicas e de governança, eventos, área institucional, aprovações, documentos e credenciamento. Os recursos novos dependem do contrato `/api/governanca` e mostram indisponibilidade enquanto ele não existir. A API legada foi preservada.
+
+- [Prompt completo para a equipe do backend](docs/prompt-backend.md)
+- [Comparação com os pedidos da professora](docs/ajustes-professora.md)
+
+Novos papéis reconhecidos: `admin_geral`, `diretoria` e `representante_instituicao`. O perfil legado `leitura` continua sendo consulta; não é transformado automaticamente em representante. A API deve garantir todas as restrições de acesso e vínculo institucional.

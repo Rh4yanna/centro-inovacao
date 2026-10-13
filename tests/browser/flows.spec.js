@@ -34,7 +34,12 @@ async function mockApi(page, role = 'leitura') {
   });
 }
 test('sem sessão redireciona e recuperação tem endereço próprio', async ({page})=>{
-  await mockApi(page,null);await page.goto('/presencas');await expect(page).toHaveURL(/\/login$/);
+  await mockApi(page,null);
+  for (const path of ['/', '/dashboard', '/presencas']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('input[type=password]')).toBeVisible();
+  }
   await page.getByRole('button',{name:/Esqueceu/}).click();await expect(page).toHaveURL(/\/esqueci-senha$/);
   await page.getByRole('button',{name:/Voltar para o login/}).click();await expect(page).toHaveURL(/\/login$/);
 });

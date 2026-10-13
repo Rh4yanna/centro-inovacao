@@ -18,7 +18,7 @@ async function setup(page, papel = null, handler = () => null) {
 }
 test('dashboard público abre sem login e não consulta cadastros privados', async ({page}) => {
   const calls = await setup(page,null,path => path === '/api/governanca/publico' ? {json:{versao:1,indicadores:{instituicoes:2},instituicoes:[{id:'1',nome:'Instituição autorizada',autorizaDivulgacao:true,vertente:'Educação'},{id:'2',nome:'Instituição reservada',autorizaDivulgacao:false}],calendario:[],diretoria:[]}} : null);
-  await page.goto('/dashboard');
+  await page.goto('/publico');
   await expect(page.getByRole('heading',{name:'Ciência, tecnologia e inovação'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Instituição autorizada'})).toBeVisible();
   await expect(page.getByText('Instituição reservada')).toHaveCount(0);
@@ -27,9 +27,9 @@ test('dashboard público abre sem login e não consulta cadastros privados', asy
 });
 test('API ausente mostra indisponibilidade sem simular registros', async ({page}) => {
   await setup(page);
-  await page.goto('/dashboard');
+  await page.goto('/publico');
   await expect(page.getByRole('alert')).toContainText('ainda não está disponível');
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/publico$/);
 });
 test('representante solicita alterações da própria instituição sem acessar listas privadas', async ({page}) => {
   let payload;

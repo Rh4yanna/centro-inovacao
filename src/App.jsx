@@ -411,10 +411,9 @@ function AppRoutes() {
       <Route path="/esqueci-senha" element={user ? <Navigate to="/dashboard" replace /> : (
         <EsqueciSenhaPage onBackToLogin={() => navigate("/login")} />
       )} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
       <Route path="/publico" element={<PublicDashboard />} />
       <Route path="/checkin/:token" element={<Checkin />} />
-      {!user && <Route path="/dashboard" element={<PublicDashboard />} />}
       <Route path="/*" element={user ? (
         <UsuarioContext.Provider value={user}><DominiosProvider>
           <Workspace user={user} onLogout={sair} />

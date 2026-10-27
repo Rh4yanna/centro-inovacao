@@ -9,6 +9,7 @@ import { Details, Fields, Heading, Remote } from './shared';
 import { eventSchema } from './schemas';
 import { Accreditation } from './Participation';
 import { Documents } from './InstitutionArea';
+import { ActivityWorkflow } from './ActivityWorkflow';
 
 export function Events() {
   const resource = useRecurso('/eventos');
@@ -45,5 +46,5 @@ function EventForm({initial,id}) {
 }
 function EventDetail({event}) {
   const user = useUsuario();
-  return <><Card title={event.titulo}><Details schema={eventSchema} value={event}/>{podeEditar(user) && <Link className="button" to={`/eventos/${event.id}/editar`}>Editar evento</Link>}</Card><Accreditation kind="eventos" id={event.id}/><Documents scope={`eventos/${event.id}`}/><Link to="/eventos">Voltar aos eventos</Link></>;
+  return <><Card title={event.titulo}><Details schema={eventSchema} value={event}/>{podeEditar(user) && <Link className="button" to={`/eventos/${event.id}/editar`}>Editar evento</Link>}</Card><ActivityWorkflow scope={`eventos/${event.id}`}/><Accreditation kind="eventos" id={event.id}/><Documents scope={`eventos/${event.id}`}/><Link to="/eventos">Voltar aos eventos</Link></>;
 }

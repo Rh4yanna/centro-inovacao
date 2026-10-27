@@ -1004,6 +1004,14 @@ td small {
   border-color: #c02626;
 }
 /* Fórum CTI: área pública e governança. */
+.audit-entry { border-bottom: 1px solid #e6e1ed; padding: 16px 0; }
+.audit-entry summary { cursor: pointer; overflow-wrap: anywhere; }
+.audit-entry pre { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #f7f4fb; padding: 12px; border-radius: 8px; }
+.preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
+.card fieldset { min-width: 0; }
+.sidebar nav { overflow-y: auto; min-height: 0; }
+.sidebar nav a { flex-shrink: 0; }
+.notification-button { display: inline-flex; align-items: center; justify-content: center; }
 .public-forum { max-width: 1200px; margin: auto; padding: clamp(16px, 4vw, 48px); }
 .public-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 48px; flex-wrap: wrap; }
 .public-nav > a:first-child { color: #6335a4; font-size: 1.2rem; font-weight: 700; }

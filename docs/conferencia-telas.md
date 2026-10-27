@@ -1,5 +1,7 @@
 ﻿# Conferência das telas e do quadro
 
+> Estado atualizado em 26/10/2026: consultar [ajustes-professora.md](ajustes-professora.md) e [contratos-complementares.md](contratos-complementares.md). As seções abaixo registram a revisão inicial e não devem ser usadas isoladamente para afirmar ausência das interfaces acrescentadas depois.
+
 ## Implementado e conectado à API
 
 - Login, recuperação da sessão e logout; rotas próprias `/login` e `/esqueci-senha`.

@@ -2,6 +2,8 @@
 
 Copie o texto abaixo e envie junto com o PDF **Sistema Governança Fórum CTI.pdf**. O frontend já contém telas consumidoras do contrato proposto abaixo; os endpoints novos ainda precisam ser implementados e homologados. Não afirmar que o módulo está pronto apenas porque a tela existe.
 
+**Atualização de 26/10/2026:** leia também [os contratos complementares](contratos-complementares.md). As telas de contas, notificações, importação, auditoria, convocações/RSVP, encaminhamentos, solicitações de presença/representação e fila de presenças pendentes foram acrescentadas ao frontend. O complemento detalha as novas operações e substitui as menções abaixo à ausência dessas interfaces na entrega inicial. A implementação e a homologação do backend continuam pendentes da equipe responsável.
+
 ---
 
 Precisamos adaptar o backend do Fórum CTI aos requisitos da professora, preservando os endpoints legados utilizados pelo frontend Vite/React. Implementem migrações, validações, autorização, persistência, auditoria e testes. Não usem dados simulados em produção.

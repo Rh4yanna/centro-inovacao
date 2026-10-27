@@ -7,20 +7,23 @@ export function podeExcluir(user) {
 export const representanteInstitucional = user => ['representante', 'representante_instituicao'].includes(user?.papel);
 const itens = [
   ['/dashboard','Dashboard'],['/instituicoes','Instituições'],['/representantes','Representantes'],['/reunioes','Reuniões'],['/eventos','Eventos'],['/presencas','Presenças'],['/solicitacoes','Solicitações'],['/minha-instituicao','Minha instituição'],
+  ['/contas','Contas e permissões'],['/importacoes','Importação'],['/auditoria','Histórico de alterações'],['/notificacoes','Notificações'],
 ];
 export function menuDoUsuario(user) {
   if (!user) return [];
-  if (representanteInstitucional(user)) return itens.filter(([href]) => ['/dashboard','/minha-instituicao'].includes(href)).map(([href,rotulo]) => ({href,rotulo}));
-  if (['admin_geral','diretoria'].includes(user.papel)) return itens.filter(([href]) => href !== '/minha-instituicao').map(([href,rotulo]) => ({href,rotulo}));
+  const permitido = href => !(['/contas','/importacoes'].includes(href) && !podeExcluir(user)) && !(['/auditoria','/solicitacoes'].includes(href) && !podeEditar(user));
+  if (representanteInstitucional(user)) return itens.filter(([href]) => ['/dashboard','/minha-instituicao','/notificacoes'].includes(href)).map(([href,rotulo]) => ({href,rotulo}));
+  if (['admin_geral','diretoria'].includes(user.papel)) return itens.filter(([href]) => href !== '/minha-instituicao' && permitido(href)).map(([href,rotulo]) => ({href,rotulo}));
   if (!['administrador','admin','gestor','leitura'].includes(user.papel)) return [];
-  const menu = (user.menu || []).filter(i => itens.some(([href]) => href === i.href) && (i.href !== '/solicitacoes' || podeEditar(user)) && i.href !== '/minha-instituicao');
+  const menu = (user.menu || []).filter(i => itens.some(([href]) => href === i.href) && permitido(i.href) && i.href !== '/minha-instituicao');
+  for (const href of ['/notificacoes', ...(podeEditar(user) ? ['/auditoria'] : []), ...(podeExcluir(user) ? ['/contas','/importacoes'] : [])]) if (!menu.some(i => i.href === href)) menu.push({href,rotulo:itens.find(i => i[0] === href)[1]});
   if (podeEditar(user)) for (const href of ['/eventos','/solicitacoes']) if (!menu.some(i => i.href === href)) menu.push({href,rotulo:itens.find(i => i[0] === href)[1]});
   return menu;
 }
 export function podeAbrir(user, pathname) {
   const path = pathname.replace(/\/+$/, '') || '/';
   if (!user) return false;
-  if (representanteInstitucional(user)) return ['/dashboard','/minha-instituicao'].includes(path);
+  if (representanteInstitucional(user)) return ['/dashboard','/minha-instituicao','/notificacoes'].includes(path);
   if (user.papel === 'diretoria' && /^\/instituicoes\/(?:nova|[^/]+\/editar)$/.test(path)) return false;
   const resource = menuDoUsuario(user).some(item => path === item.href || path.startsWith(item.href + '/'));
   if (!resource) return false;

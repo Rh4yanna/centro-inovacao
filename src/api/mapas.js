@@ -59,6 +59,9 @@ export function instituicaoDaLista(i) {
     state: i.uf || '',
     status: rotuloStatusInstituicao(i.status),
     representantesAtivos: i.representantesAtivos ?? 0,
+    vertente: i.vertente || '',
+    gts: Array.isArray(i.gts) ? i.gts : String(i.gts || '').split(',').map(v => v.trim()).filter(Boolean),
+    situacaoAdesao: i.situacaoAdesao || '',
   };
 }
 

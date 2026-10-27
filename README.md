@@ -60,6 +60,9 @@ Os módulos pendentes e limites devem ser conferidos nesses documentos antes da 
 O frontend contém telas públicas e de governança, eventos, área institucional, aprovações, documentos e credenciamento. Os recursos novos dependem do contrato `/api/governanca` e mostram indisponibilidade enquanto ele não existir. A API legada foi preservada.
 
 - [Prompt completo para a equipe do backend](docs/prompt-backend.md)
+- [Contratos complementares: contas, importação, notificações e demais fluxos](docs/contratos-complementares.md)
 - [Comparação com os pedidos da professora](docs/ajustes-professora.md)
 
 Novos papéis reconhecidos: `admin_geral`, `diretoria` e `representante_instituicao`. O perfil legado `leitura` continua sendo consulta; não é transformado automaticamente em representante. A API deve garantir todas as restrições de acesso e vínculo institucional.
+
+Em 26/10 foram adicionados: gestão de contas, importação CSV com prévia validada, notificações/preferências, auditoria paginada, observações internas, convocações/RSVP, encaminhamentos, solicitações de substituição e correção de presença, versões de documentos e filtros de vertente/GT/adesão. Todos dependem dos contratos descritos acima. A fila de presenças durante falha de conexão é opcional: requer suporte de idempotência do servidor; usa a aba atual, expira em 24 horas e não substitui backup. Sem sessão, `/` e `/dashboard` levam ao login; o painel público fica em `/publico`.

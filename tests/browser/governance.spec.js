@@ -43,7 +43,7 @@ test('representante solicita alterações da própria instituição sem acessar 
   await page.getByRole('button',{name:'Solicitar alteração',exact:true}).click();
   await expect.poll(() => payload?.alteracoes?.telefone).toBe('42999999999');
   expect(calls.some(c => ['/api/instituicoes','/api/representantes','/api/reunioes'].includes(c.path))).toBe(false);
-  await expect(page.getByRole('navigation',{name:'Menu principal'}).getByRole('link')).toHaveCount(2);
+  await expect(page.getByRole('navigation',{name:'Menu principal'}).getByRole('link')).toHaveCount(3);
   await page.goto('/representantes/novo');
   await expect(page.getByRole('heading',{name:'Acesso indisponivel'})).toBeVisible();
 });

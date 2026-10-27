@@ -7,6 +7,7 @@ import { podeEditar } from '../../auth/permissoes';
 import { Card } from '../institutions/components';
 import { Fields, Heading, Remote } from './shared';
 import { Reports } from './InstitutionArea';
+import OfflineAttendance from './OfflineAttendance';
 
 export function Accreditation({kind,id}) {
   const resource = useRecurso(`/${kind}/${id}/credenciamento`);
@@ -32,6 +33,7 @@ export function Accreditation({kind,id}) {
         ['tipo','Representação','required',['representante','convidado','equipe']],['statusPresenca','Presença','required',['presente','ausente','justificada']],['modalidade','Modalidade','required',['presencial','online']],['justificativa','Justificativa da inclusão ou correção','required'],
       ]} value={person} onChange={setPerson} disabled={busy}/><button disabled={busy}>Registrar presença ou correção</button></form>
     </>}
+    {podeEditar(user) && data.registroOfflineHabilitado === true && <OfflineAttendance scope={`${kind}/${id}`} person={person} people={data.pessoas} onSynced={resource.reload}/>}
     <p>{data.percentual == null ? 'Percentual de participação não disponível.' : `${data.percentual}% de participação`}</p>
     <div className="table-scroll"><table><thead><tr><th>Participante</th><th>Instituição</th><th>Tipo</th><th>Presença</th><th>Check-in</th></tr></thead><tbody>{(data.participantes || []).map(p => <tr key={p.id}><td>{p.nome}</td><td>{p.instituicao}</td><td>{p.tipo}</td><td>{p.statusPresenca}</td><td>{p.horarioCheckin || '—'}</td></tr>)}</tbody></table></div>
   </>}</Remote>{message && <p role="alert">{message}</p>}</Card>{podeEditar(user) && <Reports scope={`${kind}/${id}`}/>}</>;

@@ -7,6 +7,8 @@ import { podeEditar } from '../../auth/permissoes';
 import { Card } from '../institutions/components';
 import { Details, Fields, Heading, Remote } from './shared';
 import { institutionSchema } from './schemas';
+import { MyInvitations, PresenceRequests } from './ActivityWorkflow';
+import RepresentationRequests from './RepresentationRequests';
 
 export function InstitutionArea() {
   const resource = useRecurso('/minha-instituicao');
@@ -16,6 +18,9 @@ export function InstitutionArea() {
     <Documents scope="minha-instituicao"/>
     <Card title="Minhas solicitações">{(data.solicitacoes || []).map(s => <article key={s.id}><h3>{s.tipo}</h3><p>{s.status} · {s.criadoEm}</p><p>{s.parecer}</p></article>)}{!data.solicitacoes?.length && <p>Nenhuma solicitação enviada.</p>}</Card>
     <Reports scope="minha-instituicao"/>
+    <MyInvitations/>
+    <PresenceRequests/>
+    <RepresentationRequests/>
   </>}</Remote></>;
 }
 function InstitutionRequest({initial,onSaved}) {
@@ -57,7 +62,7 @@ export function Documents({scope}) {
     } catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
   return <Card title="Logo e documentos"><Remote resource={resource}>{data => <>
-    {(data.dados || []).map(d => <p key={d.id}>{d.nome} · {d.tipo} · versão {d.versaoArquivo} · {d.status} {urlSegura(d.downloadUrl) && <a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">Baixar</a>}</p>)}{!data.dados?.length && <p>Nenhum documento cadastrado.</p>}
+    {(data.dados || []).map(d => <article key={d.id}><p>{d.nome} · {d.tipo} · versão {d.versaoArquivo} · {d.status} {urlSegura(d.downloadUrl) && <a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">Baixar</a>}</p>{d.versoes?.length > 0 && <details><summary>Histórico de versões de {d.nome}</summary>{d.versoes.map(v => <p key={v.id}>Versão {v.versaoArquivo} · {v.enviadaEm} · {v.autorNome} {urlSegura(v.downloadUrl) && <a href={urlSegura(v.downloadUrl)} target="_blank" rel="noreferrer">Baixar versão {v.versaoArquivo}</a>}</p>)}</details>}</article>)}{!data.dados?.length && <p>Nenhum documento cadastrado.</p>}
     {data.podeEnviar && <form onSubmit={upload}><div className="governance-fields"><label>Tipo de documento<select value={type} onChange={e => setType(e.target.value)}>{types.map(v => <option key={v}>{v}</option>)}</select></label><label>Arquivo (PDF, PNG ou JPEG; até 10 MB)<input required type="file" accept="application/pdf,image/png,image/jpeg" onChange={e => setFile(e.target.files?.[0] || null)}/></label></div><button disabled={busy}>{busy ? 'Enviando...' : 'Enviar arquivo'}</button></form>}
   </>}</Remote>{message && <p role="status">{message}</p>}</Card>;
 }
@@ -76,8 +81,16 @@ export function Approvals() {
       setSelected(null); setReason(''); resource.reload();
     } catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
-  return <><Heading title="Solicitações e aprovações">Revise alterações antes de atualizar os registros oficiais.</Heading>{message && <p role="alert">{message}</p>}<Remote resource={resource}>{data => <>{data.dados.map(s => <Card key={s.id} title={s.instituicaoNome}><p>{s.tipo} · {s.status}</p><p>{s.justificativa}</p><Details schema={Object.keys(s.alteracoes || {}).map(k => [k,institutionSchema.find(f => f[0] === k)?.[1] || k])} value={s.alteracoes || {}}/>{s.status === 'pendente' && <div className="form-actions"><button disabled={busy} onClick={() => setSelected({...s,decisao:'rejeitar'})}>Solicitar ajustes</button><button disabled={busy} className="primary" onClick={() => setSelected({...s,decisao:'aprovar'})}>Aprovar</button></div>}</Card>)}{!data.dados.length && <Card><p>Nenhuma solicitação pendente.</p></Card>}</>}</Remote>
+  return <><Heading title="Solicitações e aprovações">Revise alterações antes de atualizar os registros oficiais.</Heading>{message && <p role="alert">{message}</p>}<Remote resource={resource}>{data => <>{data.dados.map(s => <Card key={s.id} title={s.instituicaoNome}><p>{s.tipo} · {s.status}</p><p>{s.justificativa}</p><RequestSummary request={s}/><Details schema={Object.keys(s.alteracoes || {}).map(k => [k,institutionSchema.find(f => f[0] === k)?.[1] || k])} value={s.alteracoes || {}}/>{s.status === 'pendente' && <div className="form-actions"><button disabled={busy} onClick={() => setSelected({...s,decisao:'rejeitar'})}>Solicitar ajustes</button><button disabled={busy} className="primary" onClick={() => setSelected({...s,decisao:'aprovar'})}>Aprovar</button></div>}</Card>)}{!data.dados.length && <Card><p>Nenhuma solicitação pendente.</p></Card>}</>}</Remote>
     {selected && <Card title="Confirmar decisão"><form onSubmit={decide}><p>{selected.decisao === 'aprovar' ? 'Aprovar as alterações de' : 'Solicitar ajustes para'} {selected.instituicaoNome}?</p><label>Parecer<textarea required value={reason} onChange={e => setReason(e.target.value)}/></label><button type="button" disabled={busy} onClick={() => setSelected(null)}>Cancelar</button><button disabled={busy} className="primary">Confirmar decisão</button></form></Card>}
+  </>;
+}
+
+function RequestSummary({ request }) {
+  return <>
+    {request.resumo?.length > 0 && <dl className="info-grid">{request.resumo.map((item, index) => <div key={index}><dt>{item.rotulo}</dt><dd>{String(item.valor ?? 'Não informado')}</dd></div>)}</dl>}
+    {(request.documentos || []).filter(d => urlSegura(d.downloadUrl)).map(d => <p key={d.id}><a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">{d.nome}</a></p>)}
+    {request.comparacao?.length > 0 && <div className="table-scroll"><table><thead><tr><th>Campo</th><th>Valor atual</th><th>Valor solicitado</th></tr></thead><tbody>{request.comparacao.map((c, index) => <tr key={index}><td>{c.rotulo}</td><td>{String(c.antes ?? '—')}</td><td>{String(c.depois ?? '—')}</td></tr>)}</tbody></table></div>}
   </>;
 }
 

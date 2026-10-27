@@ -27,7 +27,7 @@ import {
   InstitutionForm,
   InstitutionDetail,
 } from "./features/institutions/InstitutionPages";
-import { Card, Modal } from "./features/institutions/components";
+import { Card } from "./features/institutions/components";
 import {
   Representatives,
   RepresentativeForm,
@@ -47,9 +47,18 @@ import PublicDashboard from "./features/governance/PublicDashboard";
 import { Events, EventPage } from "./features/governance/Events";
 import { InstitutionArea, Approvals } from "./features/governance/InstitutionArea";
 import { Checkin } from "./features/governance/Participation";
+import Accounts from "./features/governance/Accounts";
+import Imports from "./features/governance/Imports";
+import Audit from "./features/governance/Audit";
+import Notifications from "./features/governance/Notifications";
+import { clearPending } from "./features/governance/offlineQueue";
 import "./App.css";
 
 const ICONES = {
+  "/contas": Users,
+  "/importacoes": Building2,
+  "/auditoria": CalendarDays,
+  "/notificacoes": Bell,
   "/dashboard": House,
   "/instituicoes": Building2,
   "/representantes": Users,
@@ -63,7 +72,6 @@ const ICONES = {
 function Workspace({ user, onLogout }) {
   const dominios = useDominios();
   const [message, setMessage] = useState("");
-  const [notifications, setNotifications] = useState(false);
   const location = useLocation();
 
   const listarInstituicoes = useCallback(() => podeAbrir(user, "/instituicoes") ? instituicoes.listar() : Promise.resolve([]), [user]);
@@ -142,7 +150,7 @@ function Workspace({ user, onLogout }) {
       <aside className="sidebar">
         <nav aria-label="Menu principal">
           {nav.map(([to, label, Icon]) => (
-            <NavLink to={to} key={to}>
+            <NavLink to={to} key={to} aria-label={label} title={label}>
               <Icon />
               <span>{label}</span>
             </NavLink>
@@ -166,13 +174,13 @@ function Workspace({ user, onLogout }) {
       </aside>
       <main className="main-content">
         <div className="top-tools">
-          <button
+          <NavLink
             className="notification-button"
             aria-label="Notificações"
-            onClick={() => setNotifications(true)}
+            to="/notificacoes"
           >
             <Bell />
-          </button>
+          </NavLink>
           {location.pathname === "/dashboard" && (
             <div className="today">
               Hoje,{" "}
@@ -347,16 +355,14 @@ function Workspace({ user, onLogout }) {
             <Route path="/eventos/:id" element={<EventPage />} />
             <Route path="/minha-instituicao" element={<InstitutionArea />} />
             <Route path="/solicitacoes" element={<Approvals />} />
+            <Route path="/contas" element={<Accounts />} />
+            <Route path="/importacoes" element={<Imports />} />
+            <Route path="/auditoria" element={<Audit />} />
+            <Route path="/notificacoes" element={<Notifications />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         )}
       </main>
-      {notifications && (
-        <Modal title="Notificações" onClose={() => setNotifications(false)}>
-          <p className="empty">Nenhuma notificação.</p>
-          <button onClick={() => setNotifications(false)}>Fechar</button>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -388,6 +394,7 @@ function AppRoutes() {
         return;
       }
     }
+    try { clearPending(sessionStorage); } catch { /* O navegador pode desabilitar armazenamento local. */ }
     setUser(null);
     navigate("/login", { replace: true });
   }

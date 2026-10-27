@@ -2,7 +2,25 @@
 
 Fonte: “Sistema Governança Fórum CTI.pdf”, recebido em 10/10/2026. Os itens abaixo são requisitos do produto extraídos do documento, não instruções de execução ou autorização para publicar alterações.
 
-## Comparação com o projeto
+## Situação atual — 26/10/2026
+
+As pendências de interface da entrega anterior foram ampliadas com:
+
+- Contas: criação, edição, ativação/inativação, vínculo e revisão de permissões; somente administrador.
+- Notificações consultadas da API, marcação de leitura e preferências de e-mail.
+- Importação de instituições/presenças por CSV com validação, prévia, erros por linha e confirmação separada.
+- Auditoria com filtros/paginação e observações internas de instituições.
+- Convocações com revisão de destinatários, acompanhamento da entrega e respostas da instituição.
+- Encaminhamentos estruturados com responsável, prazo, situação e resultado.
+- Solicitações de correção de presença, justificativa de ausência, substituição/encerramento de representante e associação de ofício.
+- Versões anteriores dos documentos e filtros institucionais por vertente, GT e situação de adesão.
+- Presenças pendentes na aba durante falha de conexão, com expiração, isolamento por usuário, descarte e sincronização explícita. Habilitação depende da idempotência do backend.
+
+Os contratos estão em [contratos-complementares.md](contratos-complementares.md). O backend não faz parte deste repositório nem da responsabilidade da usuária. Não considerar o sistema integralmente concluído sem implementar e homologar esses contratos no servidor. Backup, auditoria efetiva, proteção por objeto, cálculo oficial e entrega de e-mails continuam dependendo da equipe responsável.
+
+A consulta pública real em 26/10/2026 respondeu 401; não foram realizadas mutações em produção. As verificações de interface usam API simulada. O diagnóstico abaixo é histórico da primeira leitura do PDF.
+
+## Comparação inicial com o projeto
 
 | Pedido | Situação encontrada | Trabalho necessário |
 | --- | --- | --- |
@@ -57,3 +75,7 @@ Os módulos novos consomem o **contrato proposto** de `/api/governanca`; não fo
 Lint e build aprovados. Cinco testes unitários de permissão aprovados. Dezesseis cenários de navegador executados em desktop e celular (32 verificações) aprovados, com API simulada: fluxos legados, falha de logout, dashboard público sem consultas privadas, serviço indisponível, isolamento institucional, solicitação, evento separado, check-in, aprovação e upload multipart. Os dois cenários extras e as correções de seletores foram reexecutados separadamente após a suíte de 28 verificações.
 
 O ambiente local utiliza Node 20.16 e o Vite avisa que essa versão é antiga; o projeto declara Node 22 para produção. Os testes simulados não substituem homologação com o backend real.
+
+### Verificação em 26/10/2026
+
+Lint e build aprovados. Nove testes unitários de permissão/fila e 54 verificações de navegador (27 cenários em desktop e celular) aprovados com API simulada. A suíte cobre contas, bloqueios por URL, importação em duas etapas, notificações, paginação da auditoria, convocações/RSVP, encaminhamentos, solicitações de correção/substituição e reenvio da fila com a mesma chave, além dos fluxos anteriores. Não houve gravação de dados nem envio de e-mails no backend de produção. O Node local 20.16 gera aviso do Vite; o projeto continua declarando Node 22.

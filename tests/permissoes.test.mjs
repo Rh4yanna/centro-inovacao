@@ -3,13 +3,24 @@ import { test } from 'node:test';
 import { podeAbrir, podeEditar, podeExcluir } from '../src/auth/permissoes.js';
 import { menuDoUsuario } from '../src/auth/permissoes.js';
 const usuario = papel => ({papel, menu:[{href:'/instituicoes'}, {href:'/reunioes'}]});
+test('somente administradores gerenciam contas e importações mesmo com menu incorreto', () => {
+  for (const papel of ['diretoria', 'gestor', 'leitura', 'representante_instituicao', 'desconhecido']) {
+    const u = { papel, menu: [{href:'/contas'}, {href:'/importacoes'}, {href:'/auditoria'}] };
+    assert.equal(podeAbrir(u, '/contas'), false);
+    assert.equal(podeAbrir(u, '/importacoes'), false);
+  }
+  assert.equal(podeAbrir(usuario('admin_geral'), '/contas'), true);
+  assert.equal(podeAbrir(usuario('diretoria'), '/auditoria'), true);
+  assert.equal(podeAbrir(usuario('leitura'), '/auditoria'), false);
+  assert.equal(podeAbrir(usuario('representante_instituicao'), '/notificacoes'), true);
+});
 test('representante institucional tem acesso somente à sua área e ao painel público', () => {
   const u = usuario('representante_instituicao');
   assert.equal(podeAbrir(u, '/minha-instituicao'), true);
   assert.equal(podeAbrir(u, '/instituicoes/123'), false);
   assert.equal(podeAbrir(u, '/presencas'), false);
   assert.equal(podeEditar(u), false);
-  assert.equal(menuDoUsuario(u).length, 2);
+  assert.equal(menuDoUsuario(u).length, 3);
 });
 test('diretoria aprova alterações, gerencia atividades e não exclui registros', () => {
   const u = usuario('diretoria');

@@ -1,3 +1,4 @@
+import { InternalNotes } from "../governance/Audit";
 import { Documents, GovernanceEditor } from "../governance/InstitutionArea";
 import { institutionSchema } from "../governance/schemas";
 import { Attendance } from "../Attendance";
@@ -23,6 +24,9 @@ export function InstitutionList({ institutions }) {
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
   const [city, setCity] = useState("");
+  const [vertente, setVertente] = useState("");
+  const [gt, setGt] = useState("");
+  const [adesao, setAdesao] = useState("");
   const [page, setPage] = useState(1);
   const [menu, setMenu] = useState(null);
   const filtered = institutions.filter(
@@ -36,7 +40,10 @@ export function InstitutionList({ institutions }) {
           .includes(query.replace(/\D/g, "") || "no-match")) &&
       (!status || i.status === status) &&
       (!type || i.type === type) &&
-      (!city || i.city === city),
+      (!city || i.city === city) &&
+      (!vertente || i.vertente === vertente) &&
+      (!gt || (i.gts || []).includes(gt)) &&
+      (!adesao || i.situacaoAdesao === adesao),
   );
   const pages = Math.max(1, Math.ceil(filtered.length / 9));
   const current = Math.min(page, pages);
@@ -65,6 +72,9 @@ export function InstitutionList({ institutions }) {
           {[
             ["Status", status, setStatus, dominios.statusInstituicao],
             ["Tipo", type, setType, dominios.tipos],
+            ["Vertente", vertente, setVertente, [...new Set(institutions.map(i => i.vertente).filter(Boolean))]],
+            ["GT", gt, setGt, [...new Set(institutions.flatMap(i => i.gts || []))]],
+            ["Situação da adesão", adesao, setAdesao, [...new Set(institutions.map(i => i.situacaoAdesao).filter(Boolean))]],
             [
               "Cidade",
               city,
@@ -97,6 +107,7 @@ export function InstitutionList({ institutions }) {
               setStatus("");
               setType("");
               setCity("");
+              setVertente(""); setGt(""); setAdesao("");
               setPage(1);
             }}
           >
@@ -548,6 +559,7 @@ export function InstitutionDetail({ onTrocarStatus, onDelete }) {
           </div>
         </div>
       </header>
+      <Permissao><InternalNotes institutionId={id}/></Permissao>
       <GovernanceEditor scope={`instituicoes/${id}`} schema={institutionSchema} title="Cadastro no Fórum"/>
       <div className="tabs">
         <button

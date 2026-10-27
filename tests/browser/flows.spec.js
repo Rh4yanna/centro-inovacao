@@ -35,7 +35,7 @@ async function mockApi(page, role = 'leitura') {
 }
 test('sem sessão redireciona e recuperação tem endereço próprio', async ({page})=>{
   await mockApi(page,null);
-  for (const path of ['/', '/dashboard', '/presencas']) {
+  for (const path of ['/presencas', '/instituicoes']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator('input[type=password]')).toBeVisible();

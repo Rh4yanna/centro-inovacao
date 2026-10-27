@@ -14,14 +14,21 @@ test('somente administradores gerenciam contas e importações mesmo com menu in
   assert.equal(podeAbrir(usuario('leitura'), '/auditoria'), false);
   assert.equal(podeAbrir(usuario('representante_instituicao'), '/notificacoes'), true);
 });
-test('representante institucional tem acesso somente à sua área e ao painel público', () => {
-  const u = usuario('representante_instituicao');
-  assert.equal(podeAbrir(u, '/minha-instituicao'), true);
-  assert.equal(podeAbrir(u, '/instituicoes/123'), false);
-  assert.equal(podeAbrir(u, '/presencas'), false);
-  assert.equal(podeEditar(u), false);
-  assert.equal(menuDoUsuario(u).length, 3);
+test('representante consulta catalogos e detalhes sem acesso a alteracoes', () => {
+  for (const papel of ['representante', 'representante_instituicao']) {
+    const u = usuario(papel);
+    for (const base of ['/instituicoes', '/reunioes', '/eventos']) {
+      for (const path of [base, base + '/123', base + '/123/']) assert.equal(podeAbrir(u, path), true);
+      for (const suffix of ['/novo', '/nova/', '/123/editar', '/123/excluir']) assert.equal(podeAbrir(u, base + suffix), false);
+    }
+    for (const path of ['/presencas', '/representantes', '/contas', '/auditoria', '/instituicoes-outras']) assert.equal(podeAbrir(u, path), false);
+    assert.equal(podeAbrir(u, '/minha-instituicao'), true);
+    assert.equal(podeEditar(u), false);
+    assert.equal(podeExcluir(u), false);
+    assert.equal(menuDoUsuario(u).length, 6);
+  }
 });
+
 test('diretoria aprova alterações, gerencia atividades e não exclui registros', () => {
   const u = usuario('diretoria');
   assert.equal(podeAbrir(u, '/solicitacoes'), true);

@@ -42,8 +42,8 @@ test('representante solicita alterações da própria instituição sem acessar 
   await page.getByLabel('Justificativa da solicitação').fill('Atualização do contato');
   await page.getByRole('button',{name:'Solicitar alteração',exact:true}).click();
   await expect.poll(() => payload?.alteracoes?.telefone).toBe('42999999999');
-  expect(calls.some(c => ['/api/instituicoes','/api/representantes','/api/reunioes'].includes(c.path))).toBe(false);
-  await expect(page.getByRole('navigation',{name:'Menu principal'}).getByRole('link')).toHaveCount(3);
+  expect(calls.some(c => ['/api/representantes'].includes(c.path))).toBe(false);
+  await expect(page.getByRole('navigation',{name:'Menu principal'}).getByRole('link')).toHaveCount(6);
   await page.goto('/representantes/novo');
   await expect(page.getByRole('heading',{name:'Acesso indisponivel'})).toBeVisible();
 });
@@ -125,4 +125,32 @@ test('upload envia multipart e só anuncia recebimento após confirmação', asy
   await expect(page.getByRole('status').filter({hasText:'Arquivo recebido.'})).toBeVisible();
   await expect(page.getByText('logo.png · logo · versão 1 · em_analise')).toBeVisible();
   expect(uploaded).toBe(true);
+});
+
+for (const path of ['/', '/dashboard']) test(`entrada publica ${path} oferece login`, async ({page}) => {
+  const calls = await setup(page, null, p => p === '/api/governanca/publico' ? {json:{versao:1,indicadores:{},instituicoes:[],calendario:[],diretoria:[]}} : null);
+  await page.goto(path);
+  await expect(page).toHaveURL(/\/publico$/);
+  await page.getByRole('link', {name:'Acessar minha conta'}).click();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(calls.some(c => ['/api/instituicoes','/api/reunioes','/api/representantes'].includes(c.path))).toBe(false);
+});
+
+test('representante consulta evento e documentos sem controles de escrita', async ({page}) => {
+  const calls = await setup(page, 'representante_instituicao', path => {
+    if (path === '/api/governanca/eventos/e1') return {json:{versao:1,evento:{id:'e1',titulo:'Evento de consulta'}}};
+    if (path.endsWith('/documentos')) return {json:{versao:1,podeEnviar:true,dados:[{id:'d1',nome:'Material publicado',downloadUrl:'https://example.com/material.pdf'}]}};
+    if (path.endsWith('/organizacao')) return {json:{versao:1,convocacoes:[],encaminhamentos:[]}};
+  });
+  await page.goto('/eventos/e1');
+  await expect(page.getByRole('heading',{name:'Evento de consulta'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Baixar',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Editar evento'})).toHaveCount(0);
+  await expect(page.locator('input[type=file]')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Novo encaminhamento'})).toHaveCount(0);
+  for (const path of ['/instituicoes/nova','/instituicoes/i1/editar','/reunioes/nova','/reunioes/r1/editar','/eventos/novo','/eventos/e1/editar']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading',{name:'Acesso indisponivel'})).toBeVisible();
+  }
+  expect(calls.some(c => c.method !== 'GET')).toBe(false);
 });

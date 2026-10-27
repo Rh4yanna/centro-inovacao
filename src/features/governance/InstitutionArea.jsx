@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { governanca, urlSegura } from '../../api/governanca';
 import { api } from '../../api/cliente';
 import { useUsuario } from '../../auth/contexto';
-import { podeEditar } from '../../auth/permissoes';
+import { podeEditar, representanteInstitucional } from '../../auth/permissoes';
 import { Card } from '../institutions/components';
 import { Details, Fields, Heading, Remote } from './shared';
 import { institutionSchema } from './schemas';
@@ -42,6 +42,8 @@ function InstitutionRequest({initial,onSaved}) {
 }
 
 export function Documents({scope}) {
+  const user = useUsuario();
+  const somenteConsulta = representanteInstitucional(user) && scope !== 'minha-instituicao';
   const resource = useRecurso(`/${scope}/documentos`);
   const types = scope.includes('instituic') ? ['logo','oficio','termo_adesao','material'] : ['convocacao','ata','foto','material','evidencia'];
   const [type,setType] = useState(types[0]);
@@ -63,7 +65,7 @@ export function Documents({scope}) {
   }
   return <Card title="Logo e documentos"><Remote resource={resource}>{data => <>
     {(data.dados || []).map(d => <article key={d.id}><p>{d.nome} · {d.tipo} · versão {d.versaoArquivo} · {d.status} {urlSegura(d.downloadUrl) && <a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">Baixar</a>}</p>{d.versoes?.length > 0 && <details><summary>Histórico de versões de {d.nome}</summary>{d.versoes.map(v => <p key={v.id}>Versão {v.versaoArquivo} · {v.enviadaEm} · {v.autorNome} {urlSegura(v.downloadUrl) && <a href={urlSegura(v.downloadUrl)} target="_blank" rel="noreferrer">Baixar versão {v.versaoArquivo}</a>}</p>)}</details>}</article>)}{!data.dados?.length && <p>Nenhum documento cadastrado.</p>}
-    {data.podeEnviar && <form onSubmit={upload}><div className="governance-fields"><label>Tipo de documento<select value={type} onChange={e => setType(e.target.value)}>{types.map(v => <option key={v}>{v}</option>)}</select></label><label>Arquivo (PDF, PNG ou JPEG; até 10 MB)<input required type="file" accept="application/pdf,image/png,image/jpeg" onChange={e => setFile(e.target.files?.[0] || null)}/></label></div><button disabled={busy}>{busy ? 'Enviando...' : 'Enviar arquivo'}</button></form>}
+    {!somenteConsulta && data.podeEnviar && <form onSubmit={upload}><div className="governance-fields"><label>Tipo de documento<select value={type} onChange={e => setType(e.target.value)}>{types.map(v => <option key={v}>{v}</option>)}</select></label><label>Arquivo (PDF, PNG ou JPEG; até 10 MB)<input required type="file" accept="application/pdf,image/png,image/jpeg" onChange={e => setFile(e.target.files?.[0] || null)}/></label></div><button disabled={busy}>{busy ? 'Enviando...' : 'Enviar arquivo'}</button></form>}
   </>}</Remote>{message && <p role="status">{message}</p>}</Card>;
 }
 

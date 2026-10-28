@@ -420,7 +420,7 @@ function AppRoutes() {
       )} />
       <Route path="/" element={<Navigate to={user ? "/dashboard" : "/publico"} replace />} />
       {!user && <Route path="/dashboard" element={<Navigate to="/publico" replace />} />}
-      <Route path="/publico" element={<PublicDashboard />} />
+      <Route path="/publico" element={<PublicDashboard usuario={user} />} />
       <Route path="/checkin/:token" element={<Checkin />} />
       <Route path="/*" element={user ? (
         <UsuarioContext.Provider value={user}><DominiosProvider>

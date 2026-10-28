@@ -1,3 +1,4 @@
+import { formatarData } from './datas';
 import { useRecurso } from './useRecurso';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -17,7 +18,7 @@ export function Events() {
   const [query,setQuery] = useState('');
   const [status,setStatus] = useState('');
   return <><Heading title="Eventos">Workshops, missões técnicas, palestras e atividades do ecossistema.</Heading>
-    <Remote resource={resource}>{data => <Card><div className="section-heading"><h2>Agenda de eventos</h2>{podeEditar(user) && <Link className="button primary" to="/eventos/novo">Novo evento</Link>}</div><div className="governance-fields"><label>Buscar evento<input value={query} onChange={e => setQuery(e.target.value)}/></label><label>Status<select value={status} onChange={e => setStatus(e.target.value)}><option value="">Todos</option>{eventSchema.find(f => f[0] === 'status')[3].map(s => <option key={s}>{s}</option>)}</select></label></div><div className="table-scroll"><table><thead><tr><th>Evento</th><th>Data</th><th>Categoria</th><th>Status</th><th>Ações</th></tr></thead><tbody>{data.dados.filter(e => e.titulo.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')) && (!status || e.status === status)).map(e => <tr key={e.id}><td>{e.titulo}</td><td>{e.data}</td><td>{e.categoria}</td><td>{e.status}</td><td><Link to={`/eventos/${e.id}`}>Ver evento</Link></td></tr>)}</tbody></table></div>{!data.dados.length && <p className="empty">Nenhum evento cadastrado.</p>}</Card>}</Remote></>;
+    <Remote resource={resource}>{data => <Card><div className="section-heading"><h2>Agenda de eventos</h2>{podeEditar(user) && <Link className="button primary" to="/eventos/novo">Novo evento</Link>}</div><div className="governance-fields"><label>Buscar evento<input value={query} onChange={e => setQuery(e.target.value)}/></label><label>Status<select value={status} onChange={e => setStatus(e.target.value)}><option value="">Todos</option>{eventSchema.find(f => f[0] === 'status')[3].map(s => <option key={s}>{s}</option>)}</select></label></div><div className="table-scroll"><table><thead><tr><th>Evento</th><th>Data</th><th>Categoria</th><th>Status</th><th>Ações</th></tr></thead><tbody>{data.dados.filter(e => e.titulo.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')) && (!status || e.status === status)).map(e => <tr key={e.id}><td>{e.titulo}</td><td>{formatarData(e.data)}</td><td>{e.categoria}</td><td>{e.status}</td><td><Link to={`/eventos/${e.id}`}>Ver evento</Link></td></tr>)}</tbody></table></div>{!data.dados.length && <p className="empty">Nenhum evento cadastrado.</p>}</Card>}</Remote></>;
 }
 
 export function EventPage({ editing = false, creating = false }) {

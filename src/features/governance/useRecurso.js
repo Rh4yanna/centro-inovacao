@@ -13,5 +13,5 @@ export function useRecurso(path) {
     });
     return () => { active = false; };
   }, [path, version]);
-  return { ...state, loading: state.loading || state.path !== path, reload: () => { setState({ loading: true, data: null, error: '' }); setVersion(v => v + 1); } };
+  return { ...state, loading: state.loading || state.path !== path, reload: (preservar = false) => { if (preservar !== true) setState({ loading: true, data: null, error: '' }); setVersion(v => v + 1); } };
 }

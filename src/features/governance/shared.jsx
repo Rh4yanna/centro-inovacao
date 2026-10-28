@@ -1,3 +1,4 @@
+import { formatarData } from './datas';
 import { Card } from '../institutions/components';
 
 export function Remote({ resource, children }) {
@@ -20,5 +21,5 @@ export function Fields({ schema, value, onChange, disabled = false }) {
 }
 
 export function Details({ schema, value }) {
-  return <dl className="info-grid">{schema.map(([key, label, type]) => <div key={key}><dt>{label}</dt><dd>{type === 'checkbox' ? (value[key] ? 'Sim' : 'Não') : String(value[key] ?? '') || 'Não informado'}</dd></div>)}</dl>;
+  return <dl className="info-grid">{schema.map(([key, label, type]) => <div key={key}><dt>{label}</dt><dd>{type === 'checkbox' ? (value[key] ? 'Sim' : 'Não') : ['date', 'datetime-local'].includes(type) ? formatarData(value[key], type === 'datetime-local') : String(value[key] ?? '') || 'Não informado'}</dd></div>)}</dl>;
 }

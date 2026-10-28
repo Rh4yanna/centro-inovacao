@@ -1,3 +1,4 @@
+import { formatarData } from './datas';
 import { useRecurso } from './useRecurso';
 import { useState } from 'react';
 import { governanca, urlSegura } from '../../api/governanca';
@@ -14,13 +15,13 @@ export function InstitutionArea() {
   const resource = useRecurso('/minha-instituicao');
   return <><Heading title="Minha instituição">Consulte seus dados, documentos e participação. Alterações são encaminhadas para análise.</Heading><Remote resource={resource}>{data => <>
     <InstitutionRequest initial={data.instituicao} onSaved={resource.reload}/>
-    <Card title="Participação institucional"><p>{data.participacao?.percentual == null ? 'Percentual ainda não disponível.' : `${data.participacao.percentual}% de participação`}</p><p>{data.participacao?.descricao}</p>{(data.participacao?.atividades || []).map(a => <p key={`${a.tipo}-${a.id}`}>{a.data} · {a.titulo} · {a.status}</p>)}</Card>
+    <Card title="Participação institucional"><p>{data.participacao?.percentual == null ? 'Percentual ainda não disponível.' : `${data.participacao.percentual}% de participação`}</p><p>{data.participacao?.descricao}</p>{(data.participacao?.atividades || []).map(a => <p key={`${a.tipo}-${a.id}`}>{formatarData(a.data)} · {a.titulo} · {a.status}</p>)}</Card>
     <Documents scope="minha-instituicao"/>
-    <Card title="Minhas solicitações">{(data.solicitacoes || []).map(s => <article key={s.id}><h3>{s.tipo}</h3><p>{s.status} · {s.criadoEm}</p><p>{s.parecer}</p></article>)}{!data.solicitacoes?.length && <p>Nenhuma solicitação enviada.</p>}</Card>
+    <Card title="Minhas solicitações">{(data.solicitacoes || []).map(s => <article key={s.id}><h3>{s.tipo}</h3><p>{s.status} · {formatarData(s.criadoEm, true)}</p><p>{s.parecer}</p></article>)}{!data.solicitacoes?.length && <p>Nenhuma solicitação enviada.</p>}</Card>
     <Reports scope="minha-instituicao"/>
     <MyInvitations/>
-    <PresenceRequests/>
-    <RepresentationRequests/>
+    <PresenceRequests onSaved={() => resource.reload(true)}/>
+    <RepresentationRequests onSaved={() => resource.reload(true)}/>
   </>}</Remote></>;
 }
 function InstitutionRequest({initial,onSaved}) {
@@ -29,7 +30,15 @@ function InstitutionRequest({initial,onSaved}) {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   async function submit(e) {
-    e.preventDefault(); setBusy(true); setMessage('');
+    e.preventDefault(); setMessage('');
+    const faltantes = institutionSchema.filter(([key,,type]) => type === 'required' && !String(form[key] ?? '').trim()).map(([,label]) => label);
+    if (faltantes.length) return setMessage(`Preencha os campos obrigatórios: ${faltantes.join(', ')}.`);
+    if (!e.currentTarget.checkValidity()) {
+      setMessage('Confira os campos destacados antes de enviar.');
+      e.currentTarget.reportValidity();
+      return;
+    }
+    setBusy(true);
     try {
       const alteracoes = Object.fromEntries(institutionSchema.map(([key]) => [key,form[key] ?? '']).filter(([key,value]) => value !== (initial[key] ?? '')));
       if (!Object.keys(alteracoes).length) throw new Error('Altere pelo menos um campo antes de enviar.');
@@ -38,7 +47,7 @@ function InstitutionRequest({initial,onSaved}) {
       onSaved();
     } catch(e) { setMessage(e.message); } finally {setBusy(false);}
   }
-  return <form onSubmit={submit}><Card title="Dados da instituição"><Fields schema={institutionSchema} value={form} onChange={setForm} disabled={busy}/><label>Justificativa da solicitação<textarea required maxLength={2000} value={reason} onChange={e => setReason(e.target.value)}/></label>{message && <p role="alert">{message}</p>}<button className="primary" disabled={busy}>{busy ? 'Enviando...' : 'Solicitar alteração'}</button></Card></form>;
+  return <form noValidate onSubmit={submit}><Card title="Dados da instituição"><Fields schema={institutionSchema} value={form} onChange={setForm} disabled={busy}/><label>Justificativa da solicitação<textarea required maxLength={2000} value={reason} onChange={e => setReason(e.target.value)}/></label>{message && <p role="alert">{message}</p>}<button className="primary" disabled={busy}>{busy ? 'Enviando...' : 'Solicitar alteração'}</button></Card></form>;
 }
 
 export function Documents({scope}) {
@@ -64,7 +73,7 @@ export function Documents({scope}) {
     } catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
   return <Card title="Logo e documentos"><Remote resource={resource}>{data => <>
-    {(data.dados || []).map(d => <article key={d.id}><p>{d.nome} · {d.tipo} · versão {d.versaoArquivo} · {d.status} {urlSegura(d.downloadUrl) && <a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">Baixar</a>}</p>{d.versoes?.length > 0 && <details><summary>Histórico de versões de {d.nome}</summary>{d.versoes.map(v => <p key={v.id}>Versão {v.versaoArquivo} · {v.enviadaEm} · {v.autorNome} {urlSegura(v.downloadUrl) && <a href={urlSegura(v.downloadUrl)} target="_blank" rel="noreferrer">Baixar versão {v.versaoArquivo}</a>}</p>)}</details>}</article>)}{!data.dados?.length && <p>Nenhum documento cadastrado.</p>}
+    {(data.dados || []).map(d => <article key={d.id}><p>{d.nome} · {d.tipo} · versão {d.versaoArquivo} · {d.status} {urlSegura(d.downloadUrl) && <a href={urlSegura(d.downloadUrl)} target="_blank" rel="noreferrer">Baixar</a>}</p>{d.versoes?.length > 0 && <details><summary>Histórico de versões de {d.nome}</summary>{d.versoes.map(v => <p key={v.id}>Versão {v.versaoArquivo} · {formatarData(v.enviadaEm, true)} · {v.autorNome} {urlSegura(v.downloadUrl) && <a href={urlSegura(v.downloadUrl)} target="_blank" rel="noreferrer">Baixar versão {v.versaoArquivo}</a>}</p>)}</details>}</article>)}{!data.dados?.length && <p>Nenhum documento cadastrado.</p>}
     {!somenteConsulta && data.podeEnviar && <form onSubmit={upload}><div className="governance-fields"><label>Tipo de documento<select value={type} onChange={e => setType(e.target.value)}>{types.map(v => <option key={v}>{v}</option>)}</select></label><label>Arquivo (PDF, PNG ou JPEG; até 10 MB)<input required type="file" accept="application/pdf,image/png,image/jpeg" onChange={e => setFile(e.target.files?.[0] || null)}/></label></div><button disabled={busy}>{busy ? 'Enviando...' : 'Enviar arquivo'}</button></form>}
   </>}</Remote>{message && <p role="status">{message}</p>}</Card>;
 }

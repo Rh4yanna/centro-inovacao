@@ -132,6 +132,7 @@ test('encaminhamento salva responsável e prazo sem alterar pauta', async ({page
 test('representante pede correção sem alterar diretamente a presença', async ({page}) => {
   let sent;
   const calls = await setup(page, 'representante_instituicao', (path, req) => {
+    if (path === '/api/governanca/minha-instituicao') return {json:{versao:1,instituicao:{nomeFantasia:'Alfa'},solicitacoes:sent ? [{id:'s1',tipo:'correcao_presenca',status:'pendente',criadoEm:'2026-10-27T12:00:00Z'}] : []}};
     if (path === '/api/governanca/minha-instituicao/presencas') return { json: { versao: 1, dados: [{ id: 'pr1', atividadeTitulo: 'Reunião CTI', nome: 'Ana', statusPresenca: 'ausente' }] } };
     if (path.endsWith('/solicitacoes') && req.method() === 'POST') { sent = req.postDataJSON(); return { json: { versao: 1, confirmado: true, solicitacao: { id: 's1' } } }; }
   });
@@ -143,6 +144,8 @@ test('representante pede correção sem alterar diretamente a presença', async 
   await dialog.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
   await expect.poll(() => sent?.tipo).toBe('correcao_presenca');
   expect(sent.presencaId).toBe('pr1');
+  await expect(page.getByRole('heading',{name:'correcao_presenca',exact:true})).toBeVisible();
+  await expect(page.getByText(/pendente.*27\/10\/2026/)).toBeVisible();
   expect(calls.some(c => c.path.endsWith('/presencas') && c.method !== 'GET')).toBe(false);
 });
 test('fila offline preserva falhas e reutiliza chave na tentativa seguinte', async ({page}) => {
@@ -197,4 +200,30 @@ test('substituição usa vínculo e ofício sem encerrar o representante diretam
   await expect.poll(() => sent?.tipo).toBe('substituicao_representante');
   expect(sent.representanteAnteriorId).toBe('v1'); expect(sent.oficioId).toBe('d1'); expect(sent.novoRepresentante.nome).toBe('Bruno');
   expect(calls.some(c => c.method !== 'GET' && c.path.includes('/vinculos/'))).toBe(false);
+});
+
+test('cadastro incompleto avisa razao social antes de enviar', async ({page}) => {
+  let sent;
+  await setup(page,'representante_instituicao',(path,req) => {
+    if (path === '/api/governanca/minha-instituicao') return {json:{versao:1,instituicao:{nomeFantasia:'Alfa',cnpj:'12345678000100',razaoSocial:''},solicitacoes:[]}};
+    if (path.endsWith('/solicitacoes') && req.method() === 'POST') {sent=req.postDataJSON();return {json:{versao:1,solicitacao:{id:'s1'}}};}
+  });
+  await page.goto('/minha-instituicao');
+  await page.getByLabel('Justificativa da solicitação').fill('Atualizar cadastro');
+  await page.getByRole('button',{name:'Solicitar alteração',exact:true}).click();
+  await expect(page.getByRole('alert').filter({hasText:'Preencha os campos obrigatórios: Razão social.'})).toBeVisible();
+  expect(sent).toBeUndefined();
+  await page.getByLabel('Razão social',{exact:true}).fill('Alfa Ltda');
+  await page.getByRole('button',{name:'Solicitar alteração',exact:true}).click();
+  await expect.poll(()=>sent?.alteracoes?.razaoSocial).toBe('Alfa Ltda');
+});
+
+test('representante logado nao recebe chamada para login e datas civis preservam o dia', async ({page}) => {
+  await setup(page,'representante_instituicao',path => path === '/api/governanca/publico' ? {json:{versao:1,instituicoes:[],calendario:[{id:'a1',tipo:'evento',titulo:'Agenda teste',data:'2026-10-27'}]}} : null);
+  for (const path of ['/dashboard','/publico']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading',{name:'Agenda teste'})).toBeVisible();
+    await expect(page.getByText('27/10/2026', {exact:false})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Acessar minha conta'})).toHaveCount(0);
+  }
 });

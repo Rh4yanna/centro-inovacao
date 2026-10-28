@@ -1,3 +1,4 @@
+import { formatarData } from './datas';
 import { useRecurso } from './useRecurso';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -22,7 +23,7 @@ export function Accreditation({kind,id}) {
     catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
   return <><Card title="Credenciamento e presença"><Remote resource={resource}>{data => <>
-    <p>Situação: <strong>{data.status}</strong></p><p>{data.inicio} — {data.fim}</p>
+    <p>Situação: <strong>{data.status}</strong></p><p>{formatarData(data.inicio, true)} — {formatarData(data.fim, true)}</p>
     {podeEditar(user) && urlSegura(data.qrCodeUrl) && <img className="qr-code" src={urlSegura(data.qrCodeUrl)} alt="QR Code para confirmar presença"/>}
     {urlSegura(data.checkinUrl) && <a className="button" href={urlSegura(data.checkinUrl)}>Abrir check-in</a>}
     {podeEditar(user) && <>
@@ -35,7 +36,7 @@ export function Accreditation({kind,id}) {
     </>}
     {podeEditar(user) && data.registroOfflineHabilitado === true && <OfflineAttendance scope={`${kind}/${id}`} person={person} people={data.pessoas} onSynced={resource.reload}/>}
     <p>{data.percentual == null ? 'Percentual de participação não disponível.' : `${data.percentual}% de participação`}</p>
-    <div className="table-scroll"><table><thead><tr><th>Participante</th><th>Instituição</th><th>Tipo</th><th>Presença</th><th>Check-in</th></tr></thead><tbody>{(data.participantes || []).map(p => <tr key={p.id}><td>{p.nome}</td><td>{p.instituicao}</td><td>{p.tipo}</td><td>{p.statusPresenca}</td><td>{p.horarioCheckin || '—'}</td></tr>)}</tbody></table></div>
+    <div className="table-scroll"><table><thead><tr><th>Participante</th><th>Instituição</th><th>Tipo</th><th>Presença</th><th>Check-in</th></tr></thead><tbody>{(data.participantes || []).map(p => <tr key={p.id}><td>{p.nome}</td><td>{p.instituicao}</td><td>{p.tipo}</td><td>{p.statusPresenca}</td><td>{formatarData(p.horarioCheckin, true)}</td></tr>)}</tbody></table></div>
   </>}</Remote>{message && <p role="alert">{message}</p>}</Card>{podeEditar(user) && <Reports scope={`${kind}/${id}`}/>}</>;
 }
 
@@ -55,7 +56,7 @@ function CheckinForm({data,token}) {
     } catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
   if(done) return <Card title="Presença confirmada"><p role="status">Registrada em {new Date(done.horarioCheckin).toLocaleString('pt-BR')}.</p><Link to="/dashboard">Voltar ao Fórum</Link></Card>;
-  return <Card title={data.atividade.titulo}><p>{data.atividade.data} · {data.atividade.local}</p>{!data.aberto ? <p>O período de check-in está encerrado ou ainda não começou.</p> : !data.participante && !data.permiteConvidados ? <p>É necessário <Link to={`/login?retorno=${encodeURIComponent(`/checkin/${token}`)}`}>entrar na sua conta</Link> para registrar presença.</p> : <form onSubmit={submit}>
+  return <Card title={data.atividade.titulo}><p>{formatarData(data.atividade.data)} · {data.atividade.local}</p>{!data.aberto ? <p>O período de check-in está encerrado ou ainda não começou.</p> : !data.participante && !data.permiteConvidados ? <p>É necessário <Link to={`/login?retorno=${encodeURIComponent(`/checkin/${token}`)}`}>entrar na sua conta</Link> para registrar presença.</p> : <form onSubmit={submit}>
     {data.participante ? <p>Participante: <strong>{data.participante.nome}</strong></p> : <Fields schema={[[ 'nome','Nome completo','required'],['email','E-mail','email']]} value={form} onChange={setForm} disabled={busy}/>}
     <label>Instituição<select required={!!data.participante} value={form.instituicaoId} onChange={e => setForm({...form,instituicaoId:e.target.value})}><option value="">Convidado sem instituição</option>{(data.instituicoes || []).map(i => <option key={i.id} value={i.id}>{i.nome}</option>)}</select></label>
     <Fields schema={[[ 'modalidade','Participação','required',['presencial','online']],['assinatura','Assinatura: digite seu nome completo','required']]} value={form} onChange={setForm} disabled={busy}/>

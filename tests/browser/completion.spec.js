@@ -227,3 +227,60 @@ test('representante logado nao recebe chamada para login e datas civis preservam
     await expect(page.getByRole('link',{name:'Acessar minha conta'})).toHaveCount(0);
   }
 });
+
+test('logo vigente permanece durante analise e upload exige imagem', async ({page}) => {
+  let sent = false;
+  await setup(page,'representante_instituicao',(path,req) => {
+    if (path === '/api/governanca/minha-instituicao') return {json:{versao:1,instituicao:{nomeFantasia:'Alfa',logoUrl:'https://example.com/logo.png',logoEmAnalise:sent},solicitacoes:[]}};
+    if (path === '/api/governanca/minha-instituicao/documentos' && req.method() === 'POST') {
+      expect(req.headers()['content-type']).toContain('multipart/form-data');
+      expect(req.postDataBuffer().toString()).toContain('name="tipo"');
+      expect(req.postDataBuffer().toString()).toContain('logo');
+      sent = true; return {json:{versao:1,documento:{id:'d1'}}};
+    }
+  });
+  await page.goto('/minha-instituicao');
+  const logo = page.getByRole('region',{name:'Logo da instituição'});
+  await expect(logo.getByRole('img')).toHaveAttribute('src','https://example.com/logo.png');
+  await logo.getByRole('button',{name:'Enviar/trocar logo'}).click();
+  await logo.getByLabel('Arquivo da logo').setInputFiles({name:'invalido.pdf',mimeType:'application/pdf',buffer:Buffer.from('pdf')});
+  await logo.getByRole('button',{name:'Enviar logo',exact:true}).click();
+  await expect(logo.getByRole('alert')).toContainText('PNG ou JPEG');
+  expect(sent).toBe(false);
+  await logo.getByLabel('Arquivo da logo').setInputFiles({name:'logo.png',mimeType:'image/png',buffer:Buffer.from('imagem')});
+  await logo.getByRole('button',{name:'Enviar logo',exact:true}).click();
+  await expect(logo.getByText('Nova logo em análise')).toBeVisible();
+  await expect(logo.getByRole('img')).toHaveAttribute('src','https://example.com/logo.png');
+});
+
+test('diretoria seleciona oficio e anexa arquivo ao vinculo', async ({page}) => {
+  const oficio = {id:'o1',nome:'Indicacao.pdf',status:'aprovado',downloadUrl:'https://example.com/oficio.pdf'};
+  let registro = {tipo:'titular',oficio:null,oficiosDisponiveis:[oficio]};
+  let patch;
+  let uploaded = false;
+  await setup(page,'diretoria',(path,req) => {
+    if(path === '/api/representantes') return {json:{dados:[{id:'r1',nome:'Ana',status:'ativo'}]}};
+    if(path === '/api/governanca/representantes/r1/governanca') {
+      if(req.method() === 'PATCH') {patch=req.postDataJSON();registro={...registro,...patch,oficio};}
+      return {json:{versao:1,registro}};
+    }
+    if(path === '/api/governanca/representantes/r1/oficio') {
+      expect(req.headers()['content-type']).toContain('multipart/form-data');
+      expect(req.postDataBuffer().toString()).toContain('name="arquivo"');
+      uploaded=true;registro={...registro,oficio:{...oficio,id:'o2',nome:'Novo.pdf'},oficioId:'o2'};
+      return {json:{versao:1,confirmado:true,registro}};
+    }
+  });
+  await page.goto('/representantes/r1');
+  await page.getByRole('combobox',{name:'Ofício de indicação',exact:true}).selectOption('o1');
+  await page.getByRole('button',{name:'Salvar dados de governança'}).click();
+  await expect.poll(()=>patch?.oficioId).toBe('o1');
+  const letter = page.getByRole('region',{name:'Ofício de indicação',exact:true});
+  await expect(letter.getByRole('link',{name:'Baixar'})).toHaveAttribute('href',oficio.downloadUrl);
+  await letter.getByRole('button',{name:'Anexar ofício'}).click();
+  await letter.getByLabel('Arquivo do ofício').setInputFiles({name:'Novo.pdf',mimeType:'application/pdf',buffer:Buffer.from('pdf')});
+  await letter.getByRole('button',{name:'Enviar ofício',exact:true}).click();
+  await expect(letter.getByText(/Novo.pdf/)).toBeVisible();
+  expect(uploaded).toBe(true);
+  await expect(page.getByRole('combobox',{name:'Ofício de indicação',exact:true})).toHaveValue('o2');
+});

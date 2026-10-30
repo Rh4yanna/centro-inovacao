@@ -31,3 +31,5 @@ export function podeAbrir(user, pathname) {
   if (!resource) return false;
   return !/(?:\/novo|\/nova|\/editar)$/.test(path) || podeEditar(user);
 }
+
+export const podeAnexarOficio = user => podeExcluir(user) || user?.papel === 'diretoria';

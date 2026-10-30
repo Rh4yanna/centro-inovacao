@@ -1,10 +1,11 @@
+import { InstitutionLogo, RepresentativeLetter } from './InstitutionFiles';
 import { formatarData } from './datas';
 import { useRecurso } from './useRecurso';
 import { useState } from 'react';
 import { governanca, urlSegura } from '../../api/governanca';
 import { api } from '../../api/cliente';
 import { useUsuario } from '../../auth/contexto';
-import { podeEditar, representanteInstitucional } from '../../auth/permissoes';
+import { podeEditar, representanteInstitucional, podeAnexarOficio } from '../../auth/permissoes';
 import { Card } from '../institutions/components';
 import { Details, Fields, Heading, Remote } from './shared';
 import { institutionSchema } from './schemas';
@@ -14,6 +15,7 @@ import RepresentationRequests from './RepresentationRequests';
 export function InstitutionArea() {
   const resource = useRecurso('/minha-instituicao');
   return <><Heading title="Minha instituição">Consulte seus dados, documentos e participação. Alterações são encaminhadas para análise.</Heading><Remote resource={resource}>{data => <>
+    <InstitutionLogo registro={data.instituicao} scope="minha-instituicao" onSaved={() => resource.reload(true)}/>
     <InstitutionRequest initial={data.instituicao} onSaved={resource.reload}/>
     <Card title="Participação institucional"><p>{data.participacao?.percentual == null ? 'Percentual ainda não disponível.' : `${data.participacao.percentual}% de participação`}</p><p>{data.participacao?.descricao}</p>{(data.participacao?.atividades || []).map(a => <p key={`${a.tipo}-${a.id}`}>{formatarData(a.data)} · {a.titulo} · {a.status}</p>)}</Card>
     <Documents scope="minha-instituicao"/>
@@ -121,14 +123,22 @@ export function Reports({scope}) {
 
 export function GovernanceEditor({scope,schema,title}) {
   const resource = useRecurso(`/${scope}/governanca`);
-  return <Card title={title}><Remote resource={resource}>{data => <MetadataForm key={JSON.stringify(data.registro)} initial={data.registro} schema={schema} scope={scope}/>}</Remote></Card>;
+  return <Card title={title}><Remote resource={resource}>{data => <>
+    {scope.startsWith('instituicoes/') && <InstitutionLogo registro={data.registro} scope={scope} onSaved={() => resource.reload(true)}/>}
+    {scope.startsWith('representantes/') && <RepresentativeLetter registro={data.registro} scope={scope} onSaved={() => resource.reload(true)}/>}
+    <MetadataForm key={JSON.stringify(data.registro)} initial={data.registro} schema={schema} scope={scope} onSaved={() => resource.reload(true)}/>
+  </>}</Remote></Card>;
 }
-function MetadataForm({initial,schema,scope}) {
+function MetadataForm({initial,schema,scope,onSaved}) {
   const user = useUsuario(); const [form,setForm] = useState(initial); const [message,setMessage] = useState(''); const [busy,setBusy] = useState(false);
-  if (!podeEditar(user) || (user?.papel === 'diretoria' && scope.startsWith('instituicoes/'))) return <Details schema={schema} value={initial}/>;
+  const representante = scope.startsWith('representantes/');
+  const campos = schema.filter(([key]) => key !== 'oficioId');
+  if (!podeEditar(user) || (user?.papel === 'diretoria' && scope.startsWith('instituicoes/'))) return <Details schema={campos} value={initial}/>;
   async function save(e) {
     e.preventDefault(); setBusy(true); setMessage('');
-    try { const r = await governanca(`/${scope}/governanca`,{metodo:'PATCH',corpo:form}); if(!r.registro) throw new Error('A gravação não foi confirmada.'); setForm(r.registro); setMessage('Dados salvos.'); } catch(e) {setMessage(e.message);} finally {setBusy(false);}
+    try { const r = await governanca(`/${scope}/governanca`,{metodo:'PATCH',corpo:{...Object.fromEntries(schema.filter(([key]) => key !== 'oficioId' || podeAnexarOficio(user)).map(([key]) => [key, form[key]])), versaoRegistro:form.versaoRegistro}}); if(!r.registro) throw new Error('A gravação não foi confirmada.'); setForm(r.registro); setMessage('Dados salvos.'); onSaved(); } catch(e) {setMessage(e.message);} finally {setBusy(false);}
   }
-  return <form onSubmit={save}><Fields schema={schema} value={form} onChange={setForm} disabled={busy}/>{message && <p role="status">{message}</p>}<button disabled={busy}>Salvar dados de governança</button></form>;
+  return <form onSubmit={save}><Fields schema={campos} value={form} onChange={setForm} disabled={busy}/>
+    {representante && podeAnexarOficio(user) && <label>Ofício de indicação<select disabled={busy} value={form.oficioId ?? form.oficio?.id ?? ''} onChange={e => setForm({ ...form, oficioId: e.target.value })}><option value="" disabled>Selecione um ofício</option>{[...(form.oficiosDisponiveis || []), ...(form.oficio && !(form.oficiosDisponiveis || []).some(o => o.id === form.oficio.id) ? [form.oficio] : [])].map(o => <option key={o.id} value={o.id}>{o.nome} · {o.status}</option>)}</select></label>}
+    {message && <p role="status">{message}</p>}<button disabled={busy}>Salvar dados de governança</button></form>;
 }
